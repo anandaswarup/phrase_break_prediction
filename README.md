@@ -5,7 +5,7 @@ This repository contains code to train a phrase break prediction system for Text
 
 # Quick start
 ## Train TTS from scratch
-1. Download and the dataset [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel)
+1. Download the dataset [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel)
 
 
 ## References
