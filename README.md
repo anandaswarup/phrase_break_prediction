@@ -4,8 +4,13 @@ This repository contains code to train a phrase break prediction system for Text
  
 
 # Quick start
-## Train TTS from scratch
+## Train model from scratch
 1. Download the dataset [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel)
+2. Preprocess the downloaded LibriTTS Label dataset and save it in a convenient format
+
+    ```python
+    python build_LibriTTS_label_dataset.py --raw_dataset_dir <Path to the downloaded dataset> --processed_dataset_dir <Output dir, where the processed dataset will be written>
+    ```
 
 
 ## References
