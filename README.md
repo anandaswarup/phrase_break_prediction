@@ -1,6 +1,6 @@
 # Phrase break prediction using BLSTM
 
-This repository contains code to train a phrase break prediction system for Text-to-Speech systems using BLSTMs and word embeddings. The sytem is trained using LibriTTS alignments provided at [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
+This repository contains code to train a phrase break prediction model for Text-to-Speech systems using BLSTMs and word embeddings. The sytem is trained using LibriTTS alignments provided at [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
  
 
 # Quick start
@@ -23,6 +23,19 @@ This repository contains code to train a phrase break prediction system for Text
     ```
 
     Running this script will generate vocabulary files `words.txt` and `tags.txt` containing all the words and tags in the dataset. It will also save `dataset_params.json` with some extra information.
+
+4. All parameters/hyperparameters used to train the model are specified in `config.json`, which looks like
+
+    ```json
+    {
+        "embedding_dim": 50,
+        "blstm_size": 512,
+        "batch_size": 64,
+        "lr": 1e-5,
+        "num_epochs": 50
+    }
+    ```
+    In order to experiment with different values for parameters/hyperparameters you will have to modify the `config.json`.
 
 ## References
 
