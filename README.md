@@ -7,7 +7,7 @@ This repository contains code to train a phrase break prediction model for Text-
 ## Train model from scratch
 1. Download the dataset [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel)
 
-2. Preprocess the downloaded LibriTTS Label dataset and save it in a convenient format
+2. Preprocess the downloaded LibriTTS Label dataset and save it in a convenient format which will be used by the model later
 
     ```python
     python build_LibriTTS_label_dataset.py \
@@ -15,16 +15,16 @@ This repository contains code to train a phrase break prediction model for Text-
         --processed_dataset_dir <Output dir, where the processed dataset will be written>
     ```
 
-3. Build vocabularies and parameters for the dataset
+3. Build vocabularies of words and tags from the processed dataset
 
     ```python
     python build_vocab \
-        --data_dir <Directory containing the dataset>
+        --data_dir <Directory containing the processed dataset>
     ```
 
-    Running this script will generate vocabulary files `words.txt` and `tags.txt` containing all the words and tags in the dataset. It will also save `dataset_params.json` with some extra information.
+    Running this script will save vocabulary files `data_dir/vocab/words.txt` and `data_dir/vocab/tags.txt` containing all the words and tags in the dataset. It will also save `data_dir/vocab/dataset_params.json` with some extra information.
 
-4. All parameters/hyperparameters used to train the model are specified in `config.json`, which looks like
+4. All model parameters as well as training hyperparameters are specified in `config.json`, which looks like
 
     ```json
     {
@@ -35,9 +35,8 @@ This repository contains code to train a phrase break prediction model for Text-
         "num_epochs": 50
     }
     ```
-    In order to experiment with different values for parameters/hyperparameters you will have to modify the `config.json`.
+    To experiment with different values for model parameters/training hyperparameters, `config.json` will have to be modified.
 
 ## References
-
 1. [Phrase break prediction with bidirectional encoder representations in Japanese text-to-speech synthesis](https://arxiv.org/pdf/2104.12395.pdf)
 2. [An investigation of recurrent neural network architectures using word embeddings for phrase break prediction](https://www.isca-speech.org/archive_v0/Interspeech_2016/pdfs/0885.PDF)
