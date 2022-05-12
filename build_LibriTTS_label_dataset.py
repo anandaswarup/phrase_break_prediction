@@ -7,6 +7,9 @@ from glob import glob
 
 def process_lab_file(filename):
     """Process a single lab file
+
+        Args:
+            filename (str): path to the lab file to be processed
     """
     words, tags = [], []
 
@@ -34,6 +37,10 @@ def process_lab_file(filename):
 
 def export_dataset(dataset, output_dir):
     """Export a processed dataset to disk
+
+        Args:
+            dataset (list of tuples): dataset to be written to disk
+            output_dir (str): path to the dir where the dataset will be written
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -47,6 +54,10 @@ def export_dataset(dataset, output_dir):
 
 def process_LibriTTS_label_dataset(dataset_dir, out_dir):
     """Process the raw dataset
+
+        Args:
+            dataset_dir (str): path to the raw dataset
+            out_dir (str): path to the dir where the processed dataset will be written
     """
     # Get filenames for train/dev/test splits
     train_filenames = glob(f"{dataset_dir}/lab/word/train-clean-360/**/*.lab", recursive=True)
