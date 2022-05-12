@@ -1,4 +1,4 @@
-"""Build vocabularies of words and tags from datasets"""
+"""Build vocabularies of words and tags from the processed dataset"""
 
 import argparse
 import json
@@ -49,52 +49,47 @@ def update_vocab(filename, vocab):
     return idx + 1
 
 
-if __name__ == "__main__":
-    # Setup parser to accept command line arguments
-    parser = argparse.ArgumentParser(description="Build vocabularies of words and tags from datasets")
-
-    # Command line arguments
-    parser.add_argument("--data_dir", help="Directory containing the dataset")
-
-    # Parse and get the command line arguments
-    args = parser.parse_args()
-
+def build_vocabulary(data_dir):
+    """Build the vocabularies of words and tags from the processed dataset and export them to disk to be used later
+    """
     # Build word vocab with train, dev and test datasets
     print("Building word vocabulary")
     words = Counter()
-    train_set_sentences_size = update_vocab(os.path.join(args.data_dir, "train/sentences.txt"), words)
-    dev_set_sentences_size = update_vocab(os.path.join(args.data_dir, "dev/sentences.txt"), words)
-    test_set_sentences_size = update_vocab(os.path.join(args.data_dir, "test/sentences.txt"), words)
+    train_set_sentences_size = update_vocab(os.path.join(data_dir, "train/sentences.txt"), words)
+    dev_set_sentences_size = update_vocab(os.path.join(data_dir, "dev/sentences.txt"), words)
+    test_set_sentences_size = update_vocab(os.path.join(data_dir, "test/sentences.txt"), words)
 
     # Build tag vocab with train, dev and test datasets
     print("Building tag vocabulary")
     tags = Counter()
-    train_set_tags_size = update_vocab(os.path.join(args.data_dir, "train/labels.txt"), tags)
-    dev_set_tags_size = update_vocab(os.path.join(args.data_dir, "dev/labels.txt"), tags)
-    test_set_tags_size = update_vocab(os.path.join(args.data_dir, "test/labels.txt"), tags)
+    train_set_tags_size = update_vocab(os.path.join(data_dir, "train/labels.txt"), tags)
+    dev_set_tags_size = update_vocab(os.path.join(data_dir, "dev/labels.txt"), tags)
+    test_set_tags_size = update_vocab(os.path.join(data_dir, "test/labels.txt"), tags)
 
     # Sanity checks
     assert train_set_sentences_size == train_set_tags_size
     assert dev_set_sentences_size == dev_set_tags_size
     assert test_set_sentences_size == test_set_tags_size
 
-    # Only keep words which occur atleast 10 times in the vocabulary. All words occurring less that 10 times will be 
-    # replaced with "_UNK_". This will ensure some training data for the "_UNK_" token
-    words = [token for token, count in words.items() if count >= 10]
+    # Only keep words which occur atleast 10 times in the vocabulary. All words occurring less 10 times will be
+    # replaced with "_UNK_". Also the LibriTTS dataset a <unk> token. I am assuming that token also represents "_UNK_"
+    # This will ensure some training data for the "_UNK_" token
+    words = [token for token, count in words.items() if token != "<unk>" and count >= 10]
     # Keep all tags
     tags = [token for token, _ in tags.items()]
 
-    # Add pad tokens to the vocabulary
-    words.append(_pad_word)
-    tags.append(_pad_tag)
-
-    # Add _UNK_ token for unknown words
-    words.append(_unk)
+    # Add pad tokens and unknown tokens to the vocabulary
+    words.insert(0, _unk)
+    words.insert(0, _pad_word)
+    tags.insert(0, _pad_tag)
 
     # Save the vocabularies to file
     print("Saving vocabularies to file")
-    save_vocab_to_txt_file(words, os.path.join(args.data_dir, "words.txt"))
-    save_vocab_to_txt_file(tags, os.path.join(args.data_dir, "tags.txt"))
+    if not os.path.exists(os.path.join(data_dir, "vocab")):
+        os.makedirs(os.path.join(data_dir, "vocab"))
+
+    save_vocab_to_txt_file(words, os.path.join(data_dir, "vocab/words.txt"))
+    save_vocab_to_txt_file(tags, os.path.join(data_dir, "vocab/tags.txt"))
 
     # Save dataset properties to disk as json
     dataset_params = {
@@ -107,4 +102,18 @@ if __name__ == "__main__":
         "pad_tag": _pad_tag,
         "unk": _unk,
     }
-    save_dict_to_json(dataset_params, os.path.join(args.data_dir, "dataset_params.json"))
+    save_dict_to_json(dataset_params, os.path.join(data_dir, "vocab/dataset_params.json"))
+
+
+if __name__ == "__main__":
+    # Setup parser to accept command line arguments
+    parser = argparse.ArgumentParser(description="Build vocabularies of words and tags from the processed dataset")
+
+    # Command line arguments
+    parser.add_argument("--data_dir", help="Directory containing the processed dataset")
+
+    # Parse and get the command line arguments
+    args = parser.parse_args()
+
+    # Build the vocabularies of words and tags from the processed dataset and export them to disk to be used later
+    build_vocabulary(args.data_dir)
