@@ -19,7 +19,7 @@ class PhraseBreakPredictor(nn.Module):
         self.embedding_layer = nn.Embedding(cfg.vocab_size, cfg.embedding_dim)
 
         # BLSTM layer
-        self.blstm = nn.LSTM(cfg.embedding_dim, cfg.blstm_size//2, num_layers=2, batch_first=True, bidirectional=True)
+        self.blstm = nn.LSTM(cfg.embedding_dim, cfg.blstm_size // 2, num_layers=2, batch_first=True, bidirectional=True)
 
         # Output fully connected layer
         self.fc = nn.Linear(cfg.blstm_size, cfg.num_tags)
