@@ -38,26 +38,6 @@ class Config:
         return self.__dict__
 
 
-def RunningAverage():
-    """Class that maintains the running average of a quantity
-    """
-
-    def __init__(self):
-        """Instantiate the class
-        """
-        self.steps = 0
-        self.total = 0
-
-    def update(self, val):
-        """Update a new value
-        """
-        self.total += val
-        self.steps += 1
-
-    def __call__(self):
-        return self.total / float(self.steps)
-
-
 def save_dict_to_json(d, filename):
     """Save python dictionary to json file
     """
