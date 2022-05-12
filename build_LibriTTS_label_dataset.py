@@ -30,8 +30,6 @@ def process_lab_file(filename):
             words.append(word)
             tags.append(tag)
 
-    tags[-1] = "BB"
-
     return words, tags
 
 
