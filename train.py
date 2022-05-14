@@ -69,7 +69,6 @@ def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
 def train_and_evaluate_model(cfg, data_dir, experiment_dir):
     """Train the model
     """
-    print("Enter")
     torch.manual_seed(1234)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(1234)
@@ -102,17 +101,16 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir):
     val_f1_scores = {}
 
     for epoch in range(cfg.num_epochs, 1):
-        print("Enter2")
         # Train for one epoch (one full pass over the training set)
         num_train_steps = (cfg.train_size + 1) // cfg.batch_size
         print(num_train_steps)
-        train_data_iterator = data_loader.data_iterator(train_data, cfg.batch_size, shuffle=True)
+        train_data_iterator = data_loader.data_iterator(train_data, cfg, shuffle=True)
         train_loss = train_epoch(model, optimizer, device, train_data_iterator, num_train_steps)
 
         # Evaluate the model after each epoch on the dev  set
-        num_val_steps = (cfg.dev_size + 1) // cfg.val_batch_size
+        num_val_steps = (cfg.dev_size + 1) // cfg.batch_size
         print(num_val_steps)
-        val_data_iterator = data_loader.data_iterator(dev_data, cfg.val_batch_size, shuffle=False)
+        val_data_iterator = data_loader.data_iterator(dev_data, cfg, shuffle=False)
         val_f1_score = evaluate(model, device, val_data_iterator, num_val_steps)
         val_f1_scores[epoch] = val_f1_score
 
