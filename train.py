@@ -69,6 +69,7 @@ def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
 def train_and_evaluate_model(cfg, data_dir, experiment_dir):
     """Train the model
     """
+    print("Enter")
     torch.manual_seed(1234)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(1234)
