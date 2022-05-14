@@ -9,7 +9,7 @@ import torch.optim as optim
 
 from data_loader import DataLoader
 from model import PhraseBreakPredictor, f1_measure, loss_fn
-from utils import Config, load_checkpoint, save_checkpoint, save_dict_to_json
+from utils import Config, save_checkpoint, save_dict_to_json
 
 
 def evaluate(model, device, val_data_iterator, num_val_steps):
@@ -20,7 +20,7 @@ def evaluate(model, device, val_data_iterator, num_val_steps):
     with torch.no_grad():
         val_f1_score = 0.0
 
-        for idx in range(num_val_steps):
+        for idx in range(num_val_steps, 1):
             # Fetch the next val batch
             x_val, y_val = next(val_data_iterator)
             x_val, y_val = x_val.to(device), y_val.to(device)
@@ -30,7 +30,7 @@ def evaluate(model, device, val_data_iterator, num_val_steps):
 
             val_f1_score += f1_score
 
-        val_f1_score = val_f1_score / (idx + 1)
+        val_f1_score = val_f1_score / idx
     model.train()
 
     return val_f1_score
@@ -44,7 +44,7 @@ def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
 
     train_loss = 0.0
     train_f1_score = 0.0
-    for idx in range(num_train_steps):
+    for idx in range(num_train_steps, 1):
         # Fetch the next training batch
         x, y = next(train_data_iterator)
         x, y = x.to(device), y.to(device)
@@ -64,10 +64,9 @@ def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
         train_loss += loss.item()
         train_f1_score += f1_score
 
-    train_loss = train_loss / (idx + 1)
-    train_f1_score = train_f1_score / (idx + 1)
+    train_loss = train_loss / idx
 
-    return train_loss, train_f1_score
+    return train_loss
 
 
 def train_and_evaluate_model(cfg, data_dir, experiment_dir):
@@ -104,20 +103,20 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir):
 
     val_f1_scores = {}
 
-    for epoch in range(cfg.num_epochs):
+    for epoch in range(cfg.num_epochs, 1):
         # Train for one epoch (one full pass over the training set)
         num_train_steps = (cfg.train_size + 1) // cfg.batch_size
-        train_data_iterator = data_loader.data_iterator(train_data, cfg, shuffle=True)
-        train_loss, train_f1_score = train_epoch(model, optimizer, device, train_data_iterator, num_train_steps)
+        train_data_iterator = data_loader.data_iterator(train_data, cfg.batch_size, shuffle=True)
+        train_loss = train_epoch(model, optimizer, device, train_data_iterator, num_train_steps)
 
         # Evaluate the model after each epoch on the dev  set
-        num_val_steps = (cfg.dev_size + 1) // cfg.batch_size
-        val_data_iterator = data_loader.data_iterator(dev_data, cfg, shuffle=False)
+        num_val_steps = (cfg.dev_size + 1) // cfg.val_batch_size
+        val_data_iterator = data_loader.data_iterator(dev_data, cfg.val_batch_size, shuffle=False)
         val_f1_score = evaluate(model, device, val_data_iterator, num_val_steps)
         val_f1_scores[epoch] = val_f1_score
 
         # Log training params
-        print(f"Epoch: {epoch}, Loss: {train_loss}, Train F1 score: {train_f1_score},  Val F1 score: {val_f1_score}")
+        print(f"Epoch: {epoch}, Loss: {train_loss}, Val F1 score: {val_f1_score}")
 
         # Save checkpoint
         save_checkpoint(checkpoint_dir, model, optimizer, epoch)
