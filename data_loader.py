@@ -6,7 +6,6 @@ import sys
 
 import numpy as np
 import torch
-from torch.autograd import Variable
 
 from utils import Config
 
@@ -99,12 +98,12 @@ class DataLoader:
 
         return data
 
-    def data_iterator(self, data, cfg, shuffle=False):
+    def data_iterator(self, data, batch_size, shuffle=False):
         """Returns a generator that yields batches of sentences with tags. Expires after one pass over the data
 
             Args:
                 data (dict): dictionary containing data with keys "sentences", "tags" and "size"
-                cfg (params): configuration parameters
+                batch_size (int): batch_size
                 shuffle (bool): whether the data should be shuffled
             
             Returns:
@@ -117,10 +116,10 @@ class DataLoader:
             random.shuffle(order)
 
         # perform one pass over the data
-        for i in range((data["size"] + 1) // cfg.batch_size):
+        for i in range((data["size"] + 1) // batch_size):
             # fetch sentences and tags
-            batch_sentences = [data["sentences"][idx] for idx in order[i * cfg.batch_size : (i + 1) * cfg.batch_size]]
-            batch_tags = [data["tags"][idx] for idx in order[i * cfg.batch_size : (i + 1) * cfg.batch_size]]
+            batch_sentences = [data["sentences"][idx] for idx in order[i * batch_size : (i + 1) * batch_size]]
+            batch_tags = [data["tags"][idx] for idx in order[i * batch_size : (i + 1) * batch_size]]
 
             # length of longest sentence in batch
             max_len = max([len(s) for s in batch_sentences])
