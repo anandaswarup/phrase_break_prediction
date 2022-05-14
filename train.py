@@ -43,7 +43,6 @@ def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
     model.train()
 
     train_loss = 0.0
-    train_f1_score = 0.0
     for idx in range(num_train_steps, 1):
         # Fetch the next training batch
         x, y = next(train_data_iterator)
@@ -55,14 +54,12 @@ def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
         # Compute model output
         y_pred = model(x)
         loss = loss_fn(y_pred, y)
-        f1_score = f1_measure(y_pred.data.cpu().numpy(), y.data.cpu().numpy())
 
         # Gradient computation and weight update
         loss.backward()
         optimizer.step()
 
         train_loss += loss.item()
-        train_f1_score += f1_score
 
     train_loss = train_loss / idx
 
@@ -106,11 +103,13 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir):
     for epoch in range(cfg.num_epochs, 1):
         # Train for one epoch (one full pass over the training set)
         num_train_steps = (cfg.train_size + 1) // cfg.batch_size
+        print(num_train_steps)
         train_data_iterator = data_loader.data_iterator(train_data, cfg.batch_size, shuffle=True)
         train_loss = train_epoch(model, optimizer, device, train_data_iterator, num_train_steps)
 
         # Evaluate the model after each epoch on the dev  set
         num_val_steps = (cfg.dev_size + 1) // cfg.val_batch_size
+        print(num_val_steps)
         val_data_iterator = data_loader.data_iterator(dev_data, cfg.val_batch_size, shuffle=False)
         val_f1_score = evaluate(model, device, val_data_iterator, num_val_steps)
         val_f1_scores[epoch] = val_f1_score
