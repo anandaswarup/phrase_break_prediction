@@ -62,7 +62,7 @@ class DataLoader:
         with open(sentences_file_path, "r") as reader:
             for sentence in reader.read().splitlines():
                 s = [self.vocab[token] if token in self.vocab else self.unk_idx for token in sentence.split(" ")]
-            sentences.append(s)
+                sentences.append(s)
 
         with open(tags_file_path, "r") as reader:
             for sentence in reader.read().splitlines():
@@ -90,14 +90,12 @@ class DataLoader:
                 data_dict (dict): dictionary containing sentences and corresponding tags for each split in data_dir
         """
         data = {}
-        data_splits = ["train", "dev", "test"]
 
         for s in splits:
-            if s in data_splits:
-                sentences_file_path = os.path.join(data_dir, f"{s}/sentences.txt")
-                tags_file_path = os.path.join(data_dir, f"{s}/labels.txt")
-                data[s] = {}
-                self.load_sentences_tags(sentences_file_path, tags_file_path, data[s])
+            sentences_file_path = os.path.join(data_dir, f"{s}/sentences.txt")
+            tags_file_path = os.path.join(data_dir, f"{s}/labels.txt")
+            data[s] = {}
+            self.load_sentences_tags(sentences_file_path, tags_file_path, data[s])
 
         return data
 
@@ -121,8 +119,8 @@ class DataLoader:
         # perform one pass over the data
         for i in range((data["size"] + 1) // cfg.batch_size):
             # fetch sentences and tags
-            batch_sentences = [data["sentences"]["idx"] for idx in order[i * cfg.batch_size : (i + 1) * cfg.batch_size]]
-            batch_tags = [data["tags"]["idx"] for idx in order[i * cfg.batch_size : (i + 1) * cfg.batch_size]]
+            batch_sentences = [data["sentences"][idx] for idx in order[i * cfg.batch_size : (i + 1) * cfg.batch_size]]
+            batch_tags = [data["tags"][idx] for idx in order[i * cfg.batch_size : (i + 1) * cfg.batch_size]]
 
             # length of longest sentence in batch
             max_len = max([len(s) for s in batch_sentences])
@@ -141,4 +139,4 @@ class DataLoader:
             # Convert them to PyTorch tensors
             x, y = torch.LongTensor(x), torch.LongTensor(y)
 
-            return x, y
+            yield x, y
