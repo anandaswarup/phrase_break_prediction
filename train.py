@@ -102,6 +102,7 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir):
     val_f1_scores = {}
 
     for epoch in range(cfg.num_epochs, 1):
+        print("Enter2")
         # Train for one epoch (one full pass over the training set)
         num_train_steps = (cfg.train_size + 1) // cfg.batch_size
         print(num_train_steps)
