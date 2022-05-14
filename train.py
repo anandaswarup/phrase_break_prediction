@@ -44,7 +44,6 @@ def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
 
     train_loss = 0.0
     train_f1_score = 0.0
-
     for idx in range(num_train_steps):
         # Fetch the next training batch
         x, y = next(train_data_iterator)
@@ -86,13 +85,6 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir):
     # Specify the training device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Instantiate the model
-    model = PhraseBreakPredictor(cfg)
-    model = model.to(device)
-
-    # Instantiate the optimizer
-    optimizer = optim.Adam(model.parameters(), lr=cfg.lr)
-
     # Instantiate the dataloader
     data_loader = DataLoader(data_dir, cfg)
     data = data_loader.load_data(data_dir, ["train", "dev"])
@@ -103,9 +95,16 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir):
     cfg.train_size = train_data["size"]
     cfg.dev_size = dev_data["size"]
 
+    # Instantiate the model
+    model = PhraseBreakPredictor(cfg)
+    model = model.to(device)
+
+    # Instantiate the optimizer
+    optimizer = optim.Adam(model.parameters(), lr=cfg.lr)
+
     val_f1_scores = {}
 
-    for epoch in range(cfg.num_epochs, 1):
+    for epoch in range(cfg.num_epochs):
         # Train for one epoch (one full pass over the training set)
         num_train_steps = (cfg.train_size + 1) // cfg.batch_size
         train_data_iterator = data_loader.data_iterator(train_data, cfg, shuffle=True)
