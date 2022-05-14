@@ -35,7 +35,7 @@ class PhraseBreakPredictor(nn.Module):
         x, _ = self.blstm(x)
 
         # [B, T_max, blstm_size] -> [B * T_max, blstm_size]
-        x = x.view(-1, x.shape[2]).contiguous()
+        x = x.reshape(-1, x.shape[2]).contiguous()
 
         # [B * T_max, blstm_size] -> [B * T_max, num_tags]
         x = self.fc(x)
