@@ -136,6 +136,10 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_pa
         # Save checkpoint
         save_checkpoint(checkpoint_dir, model, optimizer, epoch)
 
+    # Write dataset config and model/training config to file
+    save_dict_to_json(cfg, os.path.join(experiment_dir, "config.json"))
+    save_dict_to_json(train_dataset.dataset_params, os.path.join(experiment_dir, "dataset_params.json"))
+
 
 if __name__ == "__main__":
     # Setup parser to accept command line arguments
