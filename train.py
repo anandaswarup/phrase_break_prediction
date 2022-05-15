@@ -5,124 +5,136 @@ import os
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 import torch.optim as optim
+from sklearn.metrics import f1_score
+from torch.utils.data import DataLoader
 
-from data_loader import DataLoader
-from model import PhraseBreakPredictor, f1_measure, loss_fn
-from utils import Config, save_checkpoint, save_dict_to_json
+from data_loader import TextTagDataset
+from model import PhraseBreakPredictor
+from utils import Config, load_checkpoint, save_checkpoint, save_dict_to_json
 
 
-def evaluate(model, device, val_data_iterator, num_val_steps):
+def evaluate(model, device, dev_dataloader):
     """Evaluate the model on the dev set
     """
-    # Set model to eval mode
     model.eval()
     with torch.no_grad():
-        val_f1_score = 0.0
+        dev_set_f1 = 0.0
+        for idx, (sentences, tags) in enumerate(dev_dataloader):
+            sentences, tags = sentences.to(device), tags.to(device)
 
-        for idx in range(num_val_steps, 1):
-            # Fetch the next val batch
-            x_val, y_val = next(val_data_iterator)
-            x_val, y_val = x_val.to(device), y_val.to(device)
+            # Model predictions
+            pred_tags = model(sentences)
 
-            y_val_pred = model(x_val)
-            f1_score = f1_measure(y_val_pred.data.cpu().numpy(), y_val.data.cpu().numpy())
+            # Flatten labels
+            tags = tags.data.cpu().numpy()
+            tags = tags.ravel()
 
-            val_f1_score += f1_score
+            # np.argmax gives the class predicted for each token by the model
+            pred_tags = pred_tags.data.cpu().numpy()
+            pred_tags = np.argmax(pred_tags, axis=1)
 
-        val_f1_score = val_f1_score / idx
+            dev_set_f1 += f1_score(tags, pred_tags, average="micro")
+        dev_set_f1 = dev_set_f1 / (idx + 1)
     model.train()
 
-    return val_f1_score
+    return dev_set_f1
 
 
-def train_epoch(model, optimizer, device, train_data_iterator, num_train_steps):
-    """Train the model for one epoch
-    """
-    # set model to training mode
-    model.train()
-
-    train_loss = 0.0
-    for idx in range(num_train_steps, 1):
-        # Fetch the next training batch
-        x, y = next(train_data_iterator)
-        x, y = x.to(device), y.to(device)
-
-        # Clear previous gradients
-        optimizer.zero_grad()
-
-        # Compute model output
-        y_pred = model(x)
-        loss = loss_fn(y_pred, y)
-
-        # Gradient computation and weight update
-        loss.backward()
-        optimizer.step()
-
-        train_loss += loss.item()
-
-    train_loss = train_loss / idx
-
-    return train_loss
-
-
-def train_and_evaluate_model(cfg, data_dir, experiment_dir):
+def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_path):
     """Train the model
     """
     torch.manual_seed(1234)
     if torch.cuda.is_available():
         torch.cuda.manual_seed(1234)
 
-    # Create the directories
+    # Create directories
     checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
     os.makedirs(experiment_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    # Specify the training device
+    # Prepare the train dataset and dataloader
+    train_dataset = TextTagDataset(data_dir, split="train")
+    train_dataloader = DataLoader(
+        train_dataset,
+        batch_size=cfg.batch_size,
+        shuffle=True,
+        num_workers=8,
+        collate_fn=train_dataset.pad_collate,
+        pin_memory=True,
+        drop_last=True,
+    )
+
+    # Prepare the dev dataset and dataloader
+    dev_dataset = TextTagDataset(data_dir, split="dev")
+    dev_dataloader = DataLoader(
+        dev_dataset,
+        batch_size=cfg.batch_size,
+        shuffle=False,
+        num_workers=1,
+        collate_fn=dev_dataset.pad_collate,
+        pin_memory=False,
+        drop_last=False,
+    )
+
+    # Specify the device for training
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # Instantiate the dataloader
-    data_loader = DataLoader(data_dir, cfg)
-    data = data_loader.load_data(data_dir, ["train", "dev"])
-    train_data = data["train"]
-    dev_data = data["dev"]
-
-    # Get the sizes of train and dev datatsets and write it to cfg
-    cfg.train_size = train_data["size"]
-    cfg.dev_size = dev_data["size"]
-
     # Instantiate the model
-    model = PhraseBreakPredictor(cfg)
+    model = PhraseBreakPredictor(
+        cfg, vocab_size=train_dataset.dataset_params.vocab_size, num_tags=train_dataset.dataset_params.num_tags
+    )
     model = model.to(device)
 
     # Instantiate the optimizer
     optimizer = optim.Adam(model.parameters(), lr=cfg.lr)
 
-    val_f1_scores = {}
+    # Load checkpoint and resume training from that point (if specified)
+    if resume_checkpoint_path is not None:
+        start_epoch = load_checkpoint(resume_checkpoint_path, model, optimizer)
+    else:
+        start_epoch = 0
 
-    for epoch in range(cfg.num_epochs, 1):
-        # Train for one epoch (one full pass over the training set)
-        num_train_steps = (cfg.train_size + 1) // cfg.batch_size
-        print(num_train_steps)
-        train_data_iterator = data_loader.data_iterator(train_data, cfg, shuffle=True)
-        train_loss = train_epoch(model, optimizer, device, train_data_iterator, num_train_steps)
+    model.train()
 
-        # Evaluate the model after each epoch on the dev  set
-        num_val_steps = (cfg.dev_size + 1) // cfg.batch_size
-        print(num_val_steps)
-        val_data_iterator = data_loader.data_iterator(dev_data, cfg, shuffle=False)
-        val_f1_score = evaluate(model, device, val_data_iterator, num_val_steps)
-        val_f1_scores[epoch] = val_f1_score
+    # Main training loop
+    for epoch in range(start_epoch, cfg.num_epochs + 1):
+        train_set_f1 = 0.0
+        for idx, (sentences, tags) in enumerate(train_dataloader):
+            sentences, tags = sentences.to(device), tags.to(device)
 
-        # Log training params
-        print(f"Epoch: {epoch}, Loss: {train_loss}, Val F1 score: {val_f1_score}")
+            # Clear all previous gradients
+            optimizer.zero_grad()
+
+            # Forward pass and loss computation
+            pred_tags = model(sentences)
+            loss = F.nll_loss(pred_tags, tags)
+
+            # Backward pass (gradient computation and weight update)
+            loss.backward()
+            optimizer.step()
+
+            # Flatten labels
+            tags = tags.data.cpu().numpy()
+            tags = tags.ravel()
+
+            # np.argmax gives the class predicted for each token by the model
+            pred_tags = pred_tags.data.cpu().numpy()
+            pred_tags = np.argmax(pred_tags, axis=1)
+
+            train_set_f1 += f1_score(tags, pred_tags, average="micro")
+
+        train_set_f1 = train_set_f1 / (idx + 1)
+
+        # Evaluate the model
+        dev_set_f1 = evaluate(model, device, dev_dataloader)
+
+        # Log progress
+        print(f"epoch: {epoch}, train set F1 score: {train_set_f1}, dev set F1 score: {dev_set_f1}")
 
         # Save checkpoint
         save_checkpoint(checkpoint_dir, model, optimizer, epoch)
-
-    # Write F1 scores to json file
-    json_file_path = os.path.join(experiment_dir, "val_f1_scores.json")
-    save_dict_to_json(val_f1_scores, json_file_path)
 
 
 if __name__ == "__main__":
@@ -133,6 +145,7 @@ if __name__ == "__main__":
     parser.add_argument("--config_file", help="Configuration file (json file)", required=True)
     parser.add_argument("--data_dir", help="Directory containing the processed dataset", required=True)
     parser.add_argument("--experiment_dir", help="Directory where training artifacts will be saved", required=True)
+    parser.add_argument("--resume_checkpoint_path", help="If specified, load checkpoint and resume training")
 
     # Parse and get command line arguments
     args = parser.parse_args()
@@ -141,4 +154,4 @@ if __name__ == "__main__":
     assert os.path.isfile(args.config_file), f"No file found at {args.config_file}"
     cfg = Config(args.config_file)
 
-    train_and_evaluate_model(cfg, args.data_dir, args.experiment_dir)
+    train_and_evaluate_model(cfg, args.data_dir, args.experiment_dir, args.resume_checkpoint_path)
