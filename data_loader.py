@@ -86,7 +86,7 @@ class TextTagDataset(Dataset):
         words_seq = [self.vocab_map[word] if word in self.vocab_map else self.unk_idx for word in sentence]
         tags_seq = [self.tag_map[tag] for tag in tags]
 
-        return (words_seq, tags_seq)
+        return (torch.LongTensor(words_seq), torch.LongTensor(tags_seq))
 
     def pad_collate(self, batch):
         """Create padded batches
@@ -95,10 +95,7 @@ class TextTagDataset(Dataset):
 
         sentences, tags = list(sentences), list(tags)
 
-        sentence_lengths = [len(word_seq) for word_seq in sentences]
-        tag_lengths = [len(tag_seq) for tag_seq in tags]
-
         sentences = pad_sequence(sentences, batch_first=True, padding_value=self.pad_word_idx)
         tags = pad_sequence(tags, batch_first=True, padding_value=self.pad_tag_idx)
 
-        return torch.LongTensor(sentences), torch.LongTensor(tags), sentence_lengths, tag_lengths
+        return sentences, tags
