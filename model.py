@@ -8,19 +8,19 @@ class PhraseBreakPredictor(nn.Module):
     """Phrase break prediction model
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, vocab_size, num_tags):
         """Instantiate the model
         """
         super().__init__()
 
         # Embedding layer
-        self.embedding_layer = nn.Embedding(cfg.vocab_size, cfg.embedding_dim)
+        self.embedding_layer = nn.Embedding(vocab_size, cfg.embedding_dim)
 
         # BLSTM layer
         self.blstm = nn.LSTM(cfg.embedding_dim, cfg.blstm_size // 2, num_layers=2, batch_first=True, bidirectional=True)
 
         # Output fully connected layer
-        self.fc = nn.Linear(cfg.blstm_size, cfg.num_tags)
+        self.fc = nn.Linear(cfg.blstm_size, num_tags)
 
     def forward(self, x):
         """Forward pass
