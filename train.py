@@ -109,7 +109,7 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_pa
 
             # Forward pass and loss computation
             pred_tags = model(sentences)
-            loss = F.nll_loss(pred_tags, tags)
+            loss = F.nll_loss(pred_tags, tags.view(-1))
 
             # Backward pass (gradient computation and weight update)
             loss.backward()
