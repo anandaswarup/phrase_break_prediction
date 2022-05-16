@@ -99,6 +99,9 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_pa
     model.train()
 
     # Main training loop
+    metrics = {}
+    metrics["train_set"] = {}
+    metrics["dev_set"] = {}
     for epoch in range(start_epoch, cfg.num_epochs + 1):
         train_set_f1 = 0.0
         for idx, (sentences, tags) in enumerate(train_dataloader):
@@ -126,19 +129,24 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_pa
             train_set_f1 += f1_score(tags, pred_tags, average="micro")
 
         train_set_f1 = train_set_f1 / (idx + 1)
+        train_set_f1 = round(train_set_f1 * 100, 2)
+        metrics["train_set"][epoch] = train_set_f1
 
         # Evaluate the model
         dev_set_f1 = evaluate(model, device, dev_dataloader)
+        dev_set_f1 = round(dev_set_f1 * 100, 2)
+        metrics["dev_set"][epoch] = dev_set_f1
 
         # Log progress
-        print(f"epoch: {epoch}, train set F1 score: {train_set_f1}, dev set F1 score: {dev_set_f1}")
+        print(f"epoch: {epoch+1}, train set F1 score: {train_set_f1}, dev set F1 score: {dev_set_f1}")
 
         # Save checkpoint
         save_checkpoint(checkpoint_dir, model, optimizer, epoch)
 
     # Write dataset config and model/training config to file
-    save_dict_to_json(cfg, os.path.join(experiment_dir, "config.json"))
-    save_dict_to_json(train_dataset.dataset_params, os.path.join(experiment_dir, "dataset_params.json"))
+    save_dict_to_json(metrics, os.path.join(experiment_dir, "train_metrics.json"))
+    cfg.save(os.path.join(experiment_dir, "config.json"))
+    train_dataset.dataset_params.save(os.path.join(experiment_dir, "dataset_params.json"))
 
 
 if __name__ == "__main__":
