@@ -141,7 +141,7 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_pa
         print(f"epoch: {epoch+1}, train set F1 score: {train_set_f1}, dev set F1 score: {dev_set_f1}")
 
         # Save checkpoint
-        save_checkpoint(checkpoint_dir, model, optimizer, epoch)
+        save_checkpoint(checkpoint_dir, model, optimizer, epoch + 1)
 
     # Write dataset config and model/training config to file
     save_dict_to_json(metrics, os.path.join(experiment_dir, "train_metrics.json"))
