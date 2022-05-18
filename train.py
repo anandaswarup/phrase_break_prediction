@@ -102,7 +102,7 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_pa
     metrics = {}
     metrics["train_set"] = {}
     metrics["dev_set"] = {}
-    for epoch in range(start_epoch, cfg.num_epochs + 1):
+    for epoch in range(start_epoch, cfg.num_epochs):
         train_set_f1 = 0.0
         for idx, (sentences, tags) in enumerate(train_dataloader):
             sentences, tags = sentences.to(device), tags.to(device)
@@ -130,12 +130,12 @@ def train_and_evaluate_model(cfg, data_dir, experiment_dir, resume_checkpoint_pa
 
         train_set_f1 = train_set_f1 / (idx + 1)
         train_set_f1 = round(train_set_f1 * 100, 2)
-        metrics["train_set"][epoch] = train_set_f1
+        metrics["train_set"][epoch + 1] = train_set_f1
 
         # Evaluate the model
         dev_set_f1 = evaluate(model, device, dev_dataloader)
         dev_set_f1 = round(dev_set_f1 * 100, 2)
-        metrics["dev_set"][epoch] = dev_set_f1
+        metrics["dev_set"][epoch + 1] = dev_set_f1
 
         # Log progress
         print(f"epoch: {epoch+1}, train set F1 score: {train_set_f1}, dev set F1 score: {dev_set_f1}")
