@@ -37,6 +37,26 @@ This repository contains code to train a phrase break prediction model for Text-
     ```
     To experiment with different values for model parameters/training hyperparameters, `config.json` will have to be modified.
 
+5. Train the model
+
+    ```python
+    python train.py \
+        --config_file <path to config.json> \
+        --data_dir <Directory containing the processed dataset> \
+        --expereiment_dir <Directory where training artifacts will be saved> \
+        --resume_checkpoint_path <If specified, load specified checkpoint and resume training>
+    ```
+
+6. Evaluate the model
+
+    ```python
+    python evaluate.py \
+        --config_file <path to config.json> \
+        --vocab_dir <Directory containing the vocab files> \
+        --test_data_dir <Directory containing the test dataset> \
+        --model_checkpoint <Trained model checkpoint to use for eval>
+    ```
+
 ## References
 1. [Phrase break prediction with bidirectional encoder representations in Japanese text-to-speech synthesis](https://arxiv.org/pdf/2104.12395.pdf)
 2. [An investigation of recurrent neural network architectures using word embeddings for phrase break prediction](https://www.isca-speech.org/archive_v0/Interspeech_2016/pdfs/0885.PDF)
