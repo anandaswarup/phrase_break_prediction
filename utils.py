@@ -41,7 +41,6 @@ def save_dict_to_json(d, filename):
     """Save python dictionary to json file
     """
     with open(filename, "w") as file_writer:
-        d = {k: float(v) for k, v in d.items()}
         json.dump(d, file_writer, indent=4)
 
 
