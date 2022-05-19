@@ -42,6 +42,51 @@
         The End-to-End TTS system has been trained on the <a href="https://keithito.com/LJ-Speech-Dataset">LJSpeech
             dataset</a>. Code for training the TTS system can be found at <a href="
             https://github.com/anandaswarup/TTS">anandaswarup/TTS</a>
+        <br />
+        </p>
+        <p>
+            In all samples presented below, no phrasing means text synthesized using without any phrasing model,
+            blstm means text synthesized using phrase breaks predicted by the BLSTM model and punc means text
+            synthesized using phrase breaks inserted wherever there is punctuation (commas) in the text.
+            <br />
+        </p>
+        <p>
+        <table>
+            <tr>
+                <th>
+                    no phrasing
+                </th>
+                <th>
+                    blstm
+                </th>
+                <th>
+                    punc
+                </th>
+            </tr>
+            <tr>
+                <td>
+                    <audio controls>
+                        <source
+                            src="https://github.com/anandaswarup/phrasebreak_prediction/blob/b863bd69a182a6004a9af65f4a3d0ea3fee5de33/synthesis_output/panchatantra_stories_no_punc/story_01-tacotron2_300000steps-WaveRNN_300000steps.wav?raw=true"
+                            type="audio/wav">
+                    </audio>
+                </td>
+                <td>
+                    <audio controls>
+                        <source
+                            src="https://github.com/anandaswarup/phrasebreak_prediction/blob/b863bd69a182a6004a9af65f4a3d0ea3fee5de33/synthesis_output/panchatantra_stories_model_predicted_punc/story_01-tacotron2_300000steps-WaveRNN_300000steps.wav?raw=true"
+                            type="audio/wav">
+                    </audio>
+                </td>
+                <td>
+                    <audio controls>
+                        <source
+                            src="https://github.com/anandaswarup/phrasebreak_prediction/blob/b863bd69a182a6004a9af65f4a3d0ea3fee5de33/synthesis_output/panchatantra_stories_ground_truth_punc/story_01-tacotron2_300000steps-WaveRNN_300000steps.wav?raw=true"
+                            type="audio/wav">
+                    </audio>
+                </td>
+            </tr>
+        </table>
         </p>
     </main>
 </body>
