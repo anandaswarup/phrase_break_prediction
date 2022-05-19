@@ -1,7 +1,0 @@
-{
-    "embedding_dim": 50,
-    "blstm_size": 512,
-    "batch_size": 64,
-    "lr": 1e-3,
-    "num_epochs": 10
-}
