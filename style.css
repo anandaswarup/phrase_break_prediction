@@ -9,7 +9,7 @@ body {
     font-size: 16px;
     line-height: 1.5;
     color: #606c71;
-    text-align: left;
+    text-align: justify;
 }
 
 
@@ -115,6 +115,7 @@ table {
 
 th {
     font-weight: bold;
+    text-align: center;
 }
 
 th,
