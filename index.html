@@ -3,21 +3,45 @@
 
 <head>
     <link rel="stylesheet" type="text/css" href="style.css">
-    <title>Recurrent Neural Network based End-to-End Text-to-Speech Systems</title>
+    <title>Phrase break prediction using BLSTMs</title>
     <!-- <link rel="icon" type="image/png" href="icon.svg"> -->
 </head>
 
 <body>
     <header>
         <h1>
-            Recurrent Neural Network based End-to-End Text-to-Speech Systems
+            Phrase break prediction using BLSTMs
         </h1>
         <hr>
     </header>
     <main>
-        <p> This page contains synthetic speech samples generated using the End-to-End Text-to-Speech system implemented
-            in <a href="https://github.com/anandaswarup/TTS">anandaswarup/TTS</a>
+        <p> This page contains synthesized audio samples of children's stories to accompany the repository <a
+                href="https://github.com/anandaswarup/phrasebreak_prediction">anandaswarup/phrasebreak_prediction</a>
+            which contains code to train a phrase break prediction model for Text-to-Speech systems using BLSTMs and
+            word embeddings. The phrase break prediction system is trained using LibriTTS alignments provided at <a
+                href="https://github.com/kan-bayashi/LibriTTSLabel">kan-bayashi/LibriTTSLabel</a>. The
+            train-clean-360 split is used for training, while the dev-clean and test-clean splits are used for
+            validation and test respectively.
             <br />
+        </p>
+        <p>
+            The samples presented in this page are synthesized from text using the End-to-End TTS system based on the
+            Tacotron2 model with modifications as described below
+        <ol>
+            <li>
+                A Tacotron2 model with Dynamic Convolutional Attention which modifies the hybrid location sensitive
+                attention mechanism to be purely location based, resulting in better generalization on long utterances.
+                This model takes text (in the form of character sequence) as input and predicts a sequence of
+                mel-spectrogram frames as output.
+            </li>
+            <li>
+                A WaveRNN based vocoder; which takes the mel-spectrogram predicted in the previous step as input and
+                generates a waveform as output
+            </li>
+        </ol>
+        The End-to-End TTS system has been trained on the <a href="https://keithito.com/LJ-Speech-Dataset">LJSpeech
+            dataset</a>. Code for training the TTS system can be found at <a href="
+            https://github.com/anandaswarup/TTS">anandaswarup/TTS</a>
         </p>
     </main>
 </body>
