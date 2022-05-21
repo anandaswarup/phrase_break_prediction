@@ -2,11 +2,9 @@
 
 import argparse
 import os
-from concurrent.futures import process
 
 import numpy as np
 import torch
-from regex import W
 
 from model import PhraseBreakPredictor
 from utils import Config
@@ -79,43 +77,46 @@ def generate(cfg, synthesis_file, vocab_dir, model_checkpoint, out_file):
     model = load_trained_model(model_checkpoint, model, device)
 
     # Load the synthesis instances
-    synthesis_instances = load_synthesis_instances(synthesis_file)
-
     with open(out_file, "w") as writer:
+        synthesis_instances = load_synthesis_instances(synthesis_file)
         for fileid, text in synthesis_instances:
             print(f"Processing {fileid}")
 
-            # Process each sentence in the story
+            text = text.replace(",", "")
+            text = text.replace(";", "")
+            text = text.replace('"', "")
+            text = text.replace(":", "")
+            text = text.replace("!", ".")
+            text = text.replace("?", ".")
+            text = text.replace(".", " . ")
+
             sentences = text.split(".")
-            sentences = [sentence for sentence in sentences if sentence != ""]
-            story = []
+            sentences = [sentence.strip() for sentence in sentences if sentence != " "]
+
+            processed_sentences = []
             for sentence in sentences:
-                sentence = [word for word in sentence.split(" ") if word != ""]
+                sentence = [word for word in sentence.split(" ")]
                 word_seq = torch.LongTensor(
                     [vocab_map[word] if word in vocab_map else vocab_map[dataset_params.unk] for word in sentence]
                 ).unsqueeze(0)
                 word_seq = word_seq.to(device)
 
                 with torch.no_grad():
-                    pred_tag_seq = model(word_seq)
+                    pred_seq = model(word_seq)
 
-                # np.argmax gives the class predicted for each token by the model
-                pred_tag_seq = pred_tag_seq.data.cpu().numpy()
-                pred_tag_seq = np.argmax(pred_tag_seq, axis=1)
-                break_seq = [inv_tag_map[tag] for tag in pred_tag_seq]
+                # np.argmax gives the class predicted for word by tge model
+                pred_tag_seq = np.argmax(pred_seq.data.cpu().numpy(), axis=1)
+                pred_break_seq = [inv_tag_map[tag] for tag in pred_tag_seq]
 
-                processed_sentence = []
-                for idx in range(len(sentence)):
-                    if break_seq[idx] == "B" and idx < (len(sentence) - 1):
-                        processed_sentence.append(sentence[idx] + ",")
-                    elif break_seq[idx] == "B" and idx == len(sentence) - 1:
-                        processed_sentence.append(sentence[idx] + ".")
+                processed_sentence = ""
+                for idx in range(len(pred_break_seq)):
+                    if pred_break_seq[idx] == "B" and idx < (len(sentence) - 1):
+                        processed_sentence += sentence[idx] + "," + " "
                     else:
-                        processed_sentence.append(sentence[idx])
-                story.append(" ".join(processed_sentence))
+                        processed_sentence += sentence[idx] + " "
 
-            story = " ".join(story)
-            writer.write(fileid + "|" + story + "\n")
+                processed_sentences.append(processed_sentence)
+            writer.write(fileid + "|" + ". ".join(processed_sentences) + "\n")
 
 
 if __name__ == "__main__":
@@ -129,7 +130,7 @@ if __name__ == "__main__":
         "--model_checkpoint", help="Trained model checkpoint to use for predicting phrase breaks", required=True
     )
     parser.add_argument(
-        "--out_file", help="Output file where generated text with phrase break will be written", required=True
+        "--out_file", help="Output file where generated text with phrase breaks will be written", required=True
     )
 
     # Parse and get command line arguments
