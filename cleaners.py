@@ -1,9 +1,10 @@
 """Transformations that run over the input English language text at training and eval time"""
 
 import re
-from numbers import normalize_numbers
 
 from unidecode import unidecode
+
+from normalize_numbers import normalize_numbers
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
@@ -75,12 +76,6 @@ def replace_symbols(text):
     text = text.replace(" (", ", ")
     text = text.replace("]", ",")
     text = text.replace(" [", ", ")
-
-    # Ensure that text ends with only . ? or !
-    if text[-1] not in ("?", ".", "!", ","):
-        text = text + "."
-    elif text[-1] == ",":
-        text = text[:-1] + "."
 
     return text
 
