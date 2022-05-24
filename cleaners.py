@@ -1,8 +1,8 @@
 """Transformations that run over the input English language text at training and eval time"""
 
 import re
+from numbers import normalize_numbers
 
-from text.en.numbers import normalize_numbers
 from unidecode import unidecode
 
 # Regular expression matching whitespace:
