@@ -2,10 +2,12 @@
 
 import argparse
 import os
+from concurrent.futures import process
 
 import numpy as np
 import torch
 
+from cleaners import clean_text
 from model import PhraseBreakPredictor
 from utils import Config
 
@@ -77,46 +79,47 @@ def generate(cfg, synthesis_file, vocab_dir, model_checkpoint, out_file):
     model = load_trained_model(model_checkpoint, model, device)
 
     # Load the synthesis instances
+    synthesis_instances = load_synthesis_instances(synthesis_file)
+
     with open(out_file, "w") as writer:
-        synthesis_instances = load_synthesis_instances(synthesis_file)
         for fileid, text in synthesis_instances:
             print(f"Processing {fileid}")
+            text = clean_text(text)
 
             text = text.replace(",", "")
-            text = text.replace(";", "")
-            text = text.replace('"', "")
-            text = text.replace(":", "")
-            text = text.replace("!", ".")
-            text = text.replace("?", ".")
-            text = text.replace(".", " . ")
+            text = text.replace('"', '" ')
+            text = text.replace(".", " .")
+            text = text.replace("?", " ?")
+            text = text.replace("!", " !")
 
-            sentences = text.split(".")
-            sentences = [sentence.strip() for sentence in sentences if sentence != " "]
+            text = [word for word in text.split(" ")]
 
-            processed_sentences = []
-            for sentence in sentences:
-                sentence = [word for word in sentence.split(" ")]
-                word_seq = torch.LongTensor(
-                    [vocab_map[word] if word in vocab_map else vocab_map[dataset_params.unk] for word in sentence]
-                ).unsqueeze(0)
-                word_seq = word_seq.to(device)
+            word_seq = torch.LongTensor(
+                [vocab_map[word] if word in vocab_map else vocab_map[dataset_params.unk] for word in text]
+            ).unsqueeze(0)
+            word_seq = word_seq.to(device)
 
-                with torch.no_grad():
-                    pred_seq = model(word_seq)
+            with torch.no_grad():
+                pred_tag_seq = model(word_seq)
 
-                # np.argmax gives the class predicted for word by tge model
-                pred_tag_seq = np.argmax(pred_seq.data.cpu().numpy(), axis=1)
-                pred_break_seq = [inv_tag_map[tag] for tag in pred_tag_seq]
+            # np.argmax gives the class predicted for word by the model
+            pred_tag_seq = np.argmax(pred_tag_seq.data.cpu().numpy(), axis=1)
+            pred_break_seq = [inv_tag_map[tag] for tag in pred_tag_seq]
 
-                processed_sentence = ""
-                for idx in range(len(pred_break_seq)):
-                    if pred_break_seq[idx] == "B" and idx < (len(sentence) - 1):
-                        processed_sentence += sentence[idx] + "," + " "
-                    else:
-                        processed_sentence += sentence[idx] + " "
+            processed_text = []
+            for idx in range(len(text) - 1):
+                if (
+                    pred_break_seq[idx] == "B"
+                    and text[idx] not in (".", '"', "?", "!")
+                    and text[idx + 1] not in (".", '"', "?", "!")
+                ):
+                    processed_text.append(text[idx] + ",")
+                else:
+                    processed_text.append(text[idx])
 
-                processed_sentences.append(processed_sentence)
-            writer.write(fileid + "|" + ". ".join(processed_sentences) + "\n")
+            processed_text = " ".join(processed_text)
+
+            writer.write(fileid + "|" + processed_text)
 
 
 if __name__ == "__main__":
