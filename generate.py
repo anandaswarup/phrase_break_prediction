@@ -118,8 +118,9 @@ def generate(cfg, synthesis_file, vocab_dir, model_checkpoint, out_file):
                     processed_text.append(text[idx])
 
             processed_text = " ".join(processed_text)
+            processed_text = processed_text.replace(" . ", ". ")
 
-            writer.write(fileid + "|" + processed_text)
+            writer.write(fileid + "|" + processed_text + "\n")
 
 
 if __name__ == "__main__":
