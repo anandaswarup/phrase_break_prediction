@@ -110,7 +110,6 @@ table {
     -webkit-overflow-scrolling: touch;
     border-collapse: collapse;
     border-spacing: 0;
-    border: 3px solid;
 }
 
 th {
@@ -121,5 +120,5 @@ th {
 th,
 td {
     padding: 0.5rem 1rem;
-    border: 3px solid;
+    border: 1px solid;
 }
