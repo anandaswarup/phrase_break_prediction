@@ -112,6 +112,11 @@ table {
     border-spacing: 0;
 }
 
+table.center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 th {
     font-weight: bold;
     text-align: center;
