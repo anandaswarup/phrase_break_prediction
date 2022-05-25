@@ -121,5 +121,10 @@ th {
 th,
 td {
     padding: 0.5rem 1rem;
-    border: 1px solid #e9ebec;
+    border: 3px solid #e9ebec;
+}
+
+tr {
+    padding: 0.5rem 1rem;
+    border: 3px solid #e9ebec;
 }
