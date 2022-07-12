@@ -1,7 +1,6 @@
-# Phrase break prediction using BLSTM
+# Phrase break prediction for Text-to-Speech systems
 
 This repository contains code to train a phrase break prediction model for Text-to-Speech systems using BLSTMs and word embeddings. The sytem is trained using LibriTTS alignments provided at [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
- 
 
 # Quick start
 ## Train model from scratch
