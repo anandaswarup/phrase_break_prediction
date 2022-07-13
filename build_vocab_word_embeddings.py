@@ -7,7 +7,7 @@ from collections import Counter
 
 # Padding and unknown tokens in the vocabulary
 _pad_word = "_PAD_"
-_pad_punc = "O"
+_pad_punc = "_X_"
 _unk = "_UNK_"
 
 
