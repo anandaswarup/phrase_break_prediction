@@ -1,4 +1,4 @@
-"""Build vocabularies of words and tags from the processed dataset"""
+"""Build vocabularies of words and punctuations from the processed dataset for training word embeddings from scratch"""
 
 import argparse
 import json
@@ -7,7 +7,7 @@ from collections import Counter
 
 # Padding and unknown tokens in the vocabulary
 _pad_word = "_PAD_"
-_pad_tag = "O"
+_pad_punc = "O"
 _unk = "_UNK_"
 
 
@@ -61,27 +61,27 @@ def build_vocabulary(data_dir):
 
     # Build tag vocab with train, dev and test datasets
     print("Building tag vocabulary")
-    tags = Counter()
-    train_set_tags_size = update_vocab(os.path.join(data_dir, "train/labels.txt"), tags)
-    dev_set_tags_size = update_vocab(os.path.join(data_dir, "dev/labels.txt"), tags)
-    test_set_tags_size = update_vocab(os.path.join(data_dir, "test/labels.txt"), tags)
+    puncs = Counter()
+    train_set_puncs_size = update_vocab(os.path.join(data_dir, "train/puncs.txt"), puncs)
+    dev_set_puncs_size = update_vocab(os.path.join(data_dir, "dev/puncs.txt"), puncs)
+    test_set_puncs_size = update_vocab(os.path.join(data_dir, "test/puncs.txt"), puncs)
 
     # Sanity checks
-    assert train_set_sentences_size == train_set_tags_size
-    assert dev_set_sentences_size == dev_set_tags_size
-    assert test_set_sentences_size == test_set_tags_size
+    assert train_set_sentences_size == train_set_puncs_size
+    assert dev_set_sentences_size == dev_set_puncs_size
+    assert test_set_sentences_size == test_set_puncs_size
 
     # Only keep words which occur atleast 10 times in the vocabulary. All words occurring less 10 times will be
     # replaced with "_UNK_". Also the LibriTTS dataset a <unk> token. I am assuming that token also represents "_UNK_"
     # This will ensure some training data for the "_UNK_" token
     words = [token for token, count in words.items() if token != "<unk>" and count >= 10]
     # Keep all tags
-    tags = [token for token, _ in tags.items()]
+    puncs = [token for token, _ in puncs.items()]
 
     # Add pad tokens and unknown tokens to the vocabulary
     words.insert(0, _unk)
     words.insert(0, _pad_word)
-    tags.insert(0, _pad_tag)
+    puncs.insert(0, _pad_punc)
 
     # Save the vocabularies to file
     print("Saving vocabularies to file")
@@ -89,7 +89,7 @@ def build_vocabulary(data_dir):
         os.makedirs(os.path.join(data_dir, "vocab"))
 
     save_vocab_to_txt_file(words, os.path.join(data_dir, "vocab/words.txt"))
-    save_vocab_to_txt_file(tags, os.path.join(data_dir, "vocab/tags.txt"))
+    save_vocab_to_txt_file(puncs, os.path.join(data_dir, "vocab/tags.txt"))
 
     # Save dataset properties to disk as json
     dataset_params = {
@@ -97,9 +97,9 @@ def build_vocabulary(data_dir):
         "dev_size": dev_set_sentences_size,
         "test_size": test_set_sentences_size,
         "vocab_size": len(words),
-        "num_tags": len(tags),
+        "num_puncs": len(puncs),
         "pad_word": _pad_word,
-        "pad_tag": _pad_tag,
+        "pad_punc": _pad_punc,
         "unk": _unk,
     }
     save_dict_to_json(dataset_params, os.path.join(data_dir, "vocab/dataset_params.json"))
