@@ -9,7 +9,7 @@ This repository contains code to train phrasing models for Text-to-Speech system
 2. Preprocess the downloaded LibriTTS Label dataset and transform to a format suitable for the model
 
     ```python
-    python build_LibriTTS_label_dataset.py \
+    python utils/build_LibriTTS_label_dataset.py \
         --raw_dataset_dir <Path to the downloaded dataset> \
         --processed_dataset_dir <Output dir, where the processed dataset will be written>
     ```
@@ -17,7 +17,7 @@ This repository contains code to train phrasing models for Text-to-Speech system
 1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
 
     ```python
-    python build_vocab_word_embeddings \
+    python utils/build_vocab_word_embeddings.py \
         --data_dir <Directory containing the processed dataset>
     ```
 
