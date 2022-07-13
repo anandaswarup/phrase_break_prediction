@@ -89,7 +89,7 @@ def build_vocabulary(data_dir):
         os.makedirs(os.path.join(data_dir, "vocab"))
 
     save_vocab_to_txt_file(words, os.path.join(data_dir, "vocab/words.txt"))
-    save_vocab_to_txt_file(puncs, os.path.join(data_dir, "vocab/tags.txt"))
+    save_vocab_to_txt_file(puncs, os.path.join(data_dir, "vocab/puncs.txt"))
 
     # Save dataset properties to disk as json
     dataset_params = {
