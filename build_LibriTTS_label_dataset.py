@@ -1,19 +1,16 @@
-"""Preprocess the downloaded LibriTTS Label dataset and save it in a convenient format"""
+"""Preprocess the downloaded LibriTTS Label dataset and transform to a format suitable for the model"""
 
 import argparse
 import os
 from glob import glob
 
 
-def process_lab_file(filename):
-    """Process a single lab file
-
-        Args:
-            filename (str): path to the lab file to be processed
+def process_lab_file(labfile):
+    """Process lab file
     """
-    words, tags = [], []
+    words, puncs = [], []
 
-    with open(filename, "r") as file_reader:
+    with open(labfile, "r") as file_reader:
         lab = file_reader.readlines()
 
     lab = [line.strip("\n") for line in lab]
@@ -25,17 +22,18 @@ def process_lab_file(filename):
             continue
         else:
             next_word = lab[idx + 1][2]
-            tag = "B" if next_word == "" else "NB"
+            punc = "_COMMA_" if next_word == "" else "_NONE_"
 
             words.append(word)
-            tags.append(tag)
+            puncs.append(punc)
 
-    return words, tags
+    puncs[-1] = "_PERIOD_"
+
+    return words, puncs
 
 
-def export_dataset(dataset, output_dir):
-    """Export a processed dataset to disk
-
+def export_dataset(dataset_split, output_dir):
+    """Export a processed dataset split to disk
         Args:
             dataset (list of tuples): dataset to be written to disk
             output_dir (str): path to the dir where the dataset will be written
@@ -44,67 +42,65 @@ def export_dataset(dataset, output_dir):
         os.makedirs(output_dir)
 
     with open(os.path.join(output_dir, "sentences.txt"), "w") as sentence_writer:
-        with open(os.path.join(output_dir, "labels.txt"), "w") as label_writer:
-            for words, tags in dataset:
+        with open(os.path.join(output_dir, "puncs.txt"), "w") as punc_writer:
+            for words, puncs in dataset_split:
                 sentence_writer.write("{}\n".format(" ".join(words)))
-                label_writer.write("{}\n".format(" ".join(tags)))
+                punc_writer.write("{}\n".format(" ".join(puncs)))
 
 
-def process_LibriTTS_label_dataset(dataset_dir, out_dir):
+def process_LibriTTS_label_dataset(dataset_dir, output_dir):
     """Process the raw dataset
 
         Args:
             dataset_dir (str): path to the raw dataset
             out_dir (str): path to the dir where the processed dataset will be written
     """
-    # Get filenames for train/dev/test splits
+    # Get lists of filenames for train/dev/test splits
     train_filenames = glob(f"{dataset_dir}/lab/word/train-clean-360/**/*.lab", recursive=True)
     dev_filenames = glob(f"{dataset_dir}/lab/word/dev-clean/**/*.lab", recursive=True)
     test_filenames = glob(f"{dataset_dir}/lab/word/test-clean/**/*.lab", recursive=True)
 
-    # Process the datasets
-    train_dataset, dev_dataset, test_dataset = [], [], []
+    # Process the splits
+    train_split, dev_split, test_split = [], [], []
 
     print("Processing train split")
     for train_filename in train_filenames:
-        words, tags = process_lab_file(train_filename)
-        train_dataset.append((words, tags))
+        words, puncts = process_lab_file(train_filename)
+        train_split.append((words, puncts))
 
     print("Processing dev split")
     for dev_filename in dev_filenames:
-        words, tags = process_lab_file(dev_filename)
-        dev_dataset.append((words, tags))
+        words, puncts = process_lab_file(dev_filename)
+        dev_split.append((words, puncts))
 
     print("Processing test split")
     for test_filename in test_filenames:
-        words, tags = process_lab_file(test_filename)
-        test_dataset.append((words, tags))
+        words, puncts = process_lab_file(test_filename)
+        test_split.append((words, puncts))
 
-    # Export the datasets
+    # Export the dataset splits to disk
     print("Exporting train dataset")
-    export_dataset(train_dataset, os.path.join(out_dir, "train"))
+    export_dataset(train_split, os.path.join(output_dir, "train"))
     print("Exporting dev dataset")
-    export_dataset(dev_dataset, os.path.join(out_dir, "dev"))
+    export_dataset(dev_split, os.path.join(output_dir, "dev"))
     print("Exporting test dataset")
-    export_dataset(test_dataset, os.path.join(out_dir, "test"))
+    export_dataset(test_split, os.path.join(output_dir, "test"))
 
 
 if __name__ == "__main__":
     # setup parser to accept command line arguments
     parser = argparse.ArgumentParser(
-        description="Preprocess the downloaded LibriTTS label dataset and save it in a convenient format"
+        description="Preprocess the downloaded LibriTTS Label dataset and transform to a format suitable for the model"
     )
 
     # Command line arguments
-    parser.add_argument("--raw_dataset_dir", help="Path to the downloaded dataset", required=True)
-    parser.add_argument(
-        "--processed_dataset_dir", help="Output dir, where the processed dataset will be written", required=True
-    )
+    parser.add_argument("--dataset_dir", help="Path to the downloaded dataset", required=True)
+    parser.add_argument("--output_dir", help="Output dir, where the transformed dataset will be written", required=True)
 
     # Parse and get the command line arguments
     args = parser.parse_args()
-    raw_dataset_dir = args.raw_dataset_dir
-    processed_dataset_dir = args.processed_dataset_dir
+    dataset_dir = args.dataset_dir
+    output_dir = args.output_dir
 
     # Process the raw dataset
-    process_LibriTTS_label_dataset(raw_dataset_dir, processed_dataset_dir)
+    process_LibriTTS_label_dataset(dataset_dir, output_dir)
