@@ -14,10 +14,10 @@ This repository contains code to train phrasing models for Text-to-Speech system
         --processed_dataset_dir <Output dir, where the processed dataset will be written>
     ```
 ## Train Word Embedding + BLSTM model
-1. Build vocabularies of words and tags from the processed dataset
+1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
 
     ```python
-    python build_vocab \
+    python build_vocab_word_embeddings \
         --data_dir <Directory containing the processed dataset>
     ```
 
