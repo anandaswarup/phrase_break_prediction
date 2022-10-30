@@ -3,6 +3,8 @@
 This repository contains code to train phrasing models for Text-to-Speech systems. The models are trained using LibriTTS alignments avialable [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
 
 # Quick start
+COMING SOON
+<!--
 ## Download and preprocess the dataset
 1. Download the dataset [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel)
 
@@ -55,7 +57,7 @@ This repository contains code to train phrasing models for Text-to-Speech system
         --test_data_dir <Directory containing the heldout test set> \
         --model_checkpoint <Trained model checkpoint to use for eval>
     ```
-
+-->
 ## References
 1. [Phrase break prediction with bidirectional encoder representations in Japanese text-to-speech synthesis](https://arxiv.org/pdf/2104.12395.pdf)
 2. [An investigation of recurrent neural network architectures using word embeddings for phrase break prediction](https://www.isca-speech.org/archive_v0/Interspeech_2016/pdfs/0885.PDF)
