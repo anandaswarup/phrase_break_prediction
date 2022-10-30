@@ -1,8 +1,0 @@
-{
-    "embedding_dim": 50,
-    "num_blstm_layers": 2,
-    "blstm_layer_size": 512,
-    "batch_size": 64,
-    "lr": 1e-3,
-    "num_epochs": 10
-}
