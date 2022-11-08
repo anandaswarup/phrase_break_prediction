@@ -9,13 +9,19 @@ class LibriTTSLabelDatasetProcessor:
     """Class for processing the LibriTTS Label dataset"""
 
     def __init__(self, file_list):
-        """Instantiate the processor"""
+        """Instantiate the processor
+        Args:
+            file_list (str): List of dataset files to be processed
+        """
         # Processor attributes
         self.file_list = file_list
         self.processed_dataset = []
 
     def _process_lab_file(self, file_name):
-        """Process lab file"""
+        """Process a single lab file
+        Args:
+            file_name (str): Name of the lab file to be processed
+        """
         punctuated_text = []
 
         # Open the lab file and read the contents
@@ -27,35 +33,40 @@ class LibriTTSLabelDatasetProcessor:
         lab = [line.split("\t") for line in lab]
         words = [line[2] for line in lab]
 
-        # Reconstruct the punctuations from the words in the lab file
+        # Reconstruct the punctuations from spaces in the words
         for idx in range(len(words) - 1):
             word = words[idx]
             if word == "":
                 continue
             else:
                 next_word = words[idx + 1]
-                next_word = words[idx + 1]
                 if next_word == "" and idx != len(words) - 2:
-                    punctuated_text.append(word + ",")
+                    word = word + ","
+                elif next_word == "" and idx == len(words) - 2:
+                    word = word + "."
                 else:
-                    punctuated_text.append(word)
+                    word
+
+                punctuated_text.append(word)
 
         return " ".join(punctuated_text)
 
-    def process_dataset(self):
-        """Process the raw dataset"""
-        for filename in self.file_list:
-            punctuated_text = self._process_lab_file(filename)
-            self.processed_dataset.append(punctuated_text)
-
-    def export_dataset(self, output_dir):
-        """Export the processed dataset to disk"""
+    def export_processed_dataset(self, output_file):
+        """Export the processed dataset to disk
+        Args:
+            output_file (str): Filename where the processed dataset will be written
+        """
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        with open(os.path.join(output_dir, "sentences.txt"), "w") as sentence_writer:
+        with open(output_file, "w") as text_writer:
             for sentence in self.processed_dataset:
-                sentence_writer.write("{}\n".format(sentence))
+                text_writer.write("{}\n".format(sentence))
+
+    def process_dataset(self):
+        """Process the dataset"""
+        for filename in self.file_list:
+            self.processed_dataset.append(self._process_lab_file(filename))
 
 
 if __name__ == "__main__":
@@ -83,4 +94,4 @@ if __name__ == "__main__":
         )
         dataset_processor = LibriTTSLabelDatasetProcessor(filelist)
         dataset_processor.process_dataset()
-        dataset_processor.export_dataset(os.path.join(output_dir, split))
+        dataset_processor.export_processed_dataset(os.path.join(output_dir, "{}.txt".format(split)))
