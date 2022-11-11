@@ -1,6 +1,6 @@
 # Phrase break prediction for Text-to-Speech systems
 
-This repository contains code to train speaker independent phrasing models in English for Text-to-Speech systems. Input representations to the model are generated either from (1) Task specific word embeddings trained from scratch using a BLSTM language model, or (2) Fine-tuned BERT models. The models are trained using the LibriTTS alignments avialable at [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
+This repository contains code to train speaker independent phrasing models in English for Text-to-Speech systems. Input representations to the model are generated either from (1) Task specific word embeddings trained from scratch using a BLSTM language model, or (2) Fine-tuned BERT models. The models are trained using the LibriTTS alignments available at [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
 
 # Quick start
 ## Download and preprocess the dataset
