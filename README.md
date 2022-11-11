@@ -1,20 +1,19 @@
 # Phrase break prediction for Text-to-Speech systems
 
-This repository contains code to train phrasing models for Text-to-Speech systems. The models are trained using LibriTTS alignments avialable [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
+This repository contains code to train speaker independent phrasing models in English for Text-to-Speech systems. Input representations to the model are generated either from (1) Task specific word embeddings trained from scratch using a BLSTM language model, or (2) Fine-tuned BERT models. The models are trained using the LibriTTS alignments avialable at [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
 
 # Quick start
-COMING SOON
-<!--
 ## Download and preprocess the dataset
 1. Download the dataset [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel)
 
 2. Preprocess the downloaded LibriTTS Label dataset and transform to a format suitable for the model
 
     ```python
-    python utils/build_LibriTTS_label_dataset.py \
-        --raw_dataset_dir <Path to the downloaded dataset> \
-        --processed_dataset_dir <Output dir, where the processed dataset will be written>
+    python utils/build_libritts_label_dataset.py \
+        --dataset_dir <Path to the downloaded dataset> \
+        --output_dir <Output dir, where the transformed dataset will be written>
     ```
+<!--
 ## Train Word Embedding + BLSTM model
 1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
 
