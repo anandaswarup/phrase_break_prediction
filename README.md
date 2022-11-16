@@ -22,6 +22,7 @@ This repository contains code to train speaker independent phrasing models in En
     ```
 
     Running this script will save vocabulary files `dataset_dir/vocab/words.txt` and `dataset_dir/vocab/puncs.txt` containing all the words and tags in the dataset. It will also save `dataset_dir/vocab/params.json` with some extra information.
+
 <!--
 2. All model parameters as well as training hyperparameters are specified in `config/word_embedding_blstm_config.json`, which looks like
 
