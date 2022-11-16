@@ -13,17 +13,16 @@ This repository contains code to train speaker independent phrasing models in En
         --dataset_dir <Path to the downloaded dataset> \
         --output_dir <Output dir, where the transformed dataset will be written>
     ```
-<!--
 ## Train Word Embedding + BLSTM model
 1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
 
     ```python
     python utils/build_vocab_word_embeddings.py \
-        --data_dir <Directory containing the processed dataset>
+        --dataset_dir <Directory containing the processed dataset>
     ```
 
-    Running this script will save vocabulary files `data_dir/vocab/words.txt` and `data_dir/vocab/tags.txt` containing all the words and tags in the dataset. It will also save `data_dir/vocab/dataset_params.json` with some extra information.
-
+    Running this script will save vocabulary files `dataset_dir/vocab/words.txt` and `dataset_dir/vocab/puncs.txt` containing all the words and tags in the dataset. It will also save `dataset_dir/vocab/params.json` with some extra information.
+<!--
 2. All model parameters as well as training hyperparameters are specified in `config/word_embedding_blstm_config.json`, which looks like
 
     ```json
