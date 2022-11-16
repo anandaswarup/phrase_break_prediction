@@ -16,8 +16,8 @@ class LibriTTSLabelDatasetProcessor:
         # Processor attributes
         self.file_list = file_list
 
-        self.processed_src = []
-        self.processed_tgt = []
+        self.processed_sentences = []
+        self.processed_punctuations = []
 
     def _process_lab_file(self, file_name):
         """Process a single lab file
@@ -63,22 +63,22 @@ class LibriTTSLabelDatasetProcessor:
             os.makedirs(output_dir)
 
         # Write the processed src to disk
-        with open(os.path.join(output_dir, "src.txt"), "w") as text_writer:
-            for line in self.processed_src:
+        with open(os.path.join(output_dir, "sentences.txt"), "w") as text_writer:
+            for line in self.processed_sentences:
                 text_writer.write("{}\n".format(line))
 
         # Write the processed tgt to disk
-        with open(os.path.join(output_dir, "tgt.txt"), "w") as text_writer:
-            for line in self.processed_tgt:
+        with open(os.path.join(output_dir, "punctuations.txt"), "w") as text_writer:
+            for line in self.processed_punctuations:
                 text_writer.write("{}\n".format(line))
 
     def process_dataset(self):
         """Process the dataset"""
         for filename in self.file_list:
-            src, tgt = self._process_lab_file(filename)
+            sentence, puncs = self._process_lab_file(filename)
 
-            self.processed_src.append(src)
-            self.processed_tgt.append(tgt)
+            self.processed_sentences.append(sentence)
+            self.processed_punctuations.append(puncs)
 
 
 if __name__ == "__main__":
