@@ -18,21 +18,22 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
         --dataset_dir <Path to the downloaded dataset> \
         --output_dir <Output dir, where the transformed dataset will be written>
     ```
-## Train Word Embedding + BLSTM model
+## BLSTM token classification model using task specific word embeddings from scratch
+### Train the model
 1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
 
     ```python
-    python utils/build_vocab_word_embeddings.py \
+    python utils/build_vocab_blstm.py \
         --dataset_dir <Directory containing the processed dataset>
     ```
 
     Running this script will save vocabulary files `dataset_dir/vocab/words.txt` and `dataset_dir/vocab/puncs.txt` containing all the words and tags in the dataset. It will also save `dataset_dir/vocab/params.json` with some extra information.
 
-2. All model parameters as well as training hyperparameters are specified in `config/word_embedding_blstm.json`, which looks like
+2. All model parameters as well as training hyperparameters are specified in `config/blstm.json`, which looks like
 
     ```json
     {
-        "embedding_dim": 50,
+        "embedding_dim": 300,
         "num_blstm_layers": 2,
         "blstm_layer_size": 512,
         "batch_size": 64,
