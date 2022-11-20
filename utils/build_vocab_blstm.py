@@ -1,20 +1,9 @@
 """Build token vocabularies from the processed dataset for training word embeddings from scratch"""
 
 import argparse
-import json
 import os
 from collections import Counter
-
-
-def save_dict_to_json(d, filename):
-    """Save python dictionary to json file
-    Args:
-        d (dict): Python dictionary to write to file
-        filename (str): Path to the json file to write the dictionary
-    """
-    with open(filename, "w") as file_writer:
-        d = {key: value for key, value in d.items()}
-        json.dump(d, file_writer, indent=4)
+from utils.utils import save_dict_to_json
 
 
 class VocabBuilder:
