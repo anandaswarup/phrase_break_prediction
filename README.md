@@ -27,7 +27,7 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
         --dataset_dir <Directory containing the processed dataset>
     ```
 
-    Running this script will save vocabulary files `dataset_dir/vocab/words.txt` and `dataset_dir/vocab/puncs.txt` containing all the words and tags in the dataset. It will also save `dataset_dir/vocab/params.json` with some extra information.
+    Running this script will save vocabulary files `dataset_dir/vocab/words.txt` and `dataset_dir/vocab/puncs.txt` containing all the words and punctuations in the dataset. It will also save `dataset_dir/vocab/params.json` with some extra information.
 
 2. All model parameters as well as training hyperparameters are specified in `config/blstm.json`, which looks like
 
