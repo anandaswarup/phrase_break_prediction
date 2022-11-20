@@ -18,7 +18,7 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
         --dataset_dir <Path to the downloaded dataset> \
         --output_dir <Output dir, where the transformed dataset will be written>
     ```
-## BLSTM token classification model using task specific word embeddings from scratch
+## BLSTM token classification model using task specific word embeddings trained from scratch
 ### Train the model
 1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
 
