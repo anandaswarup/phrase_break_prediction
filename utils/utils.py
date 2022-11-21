@@ -5,6 +5,33 @@ import os
 import torch
 
 
+def load_vocab_to_dict(filename):
+    """Load vocabulary file to python dictionary
+    Args:
+        filename (str): Path to the vocabulary file to load
+    """
+    d = {}
+    with open(filename, "r") as file_reader:
+        for idx, token in enumerate(file_reader.read().splitlines()):
+            d[token] = idx
+
+    return d
+
+
+def read_dataset_file(filename):
+    """Read text file and return contents as a list
+    Args:
+        filename (str): Path to the dataset file to read
+    """
+    d = []
+    with open(filename, "r") as file_reader:
+        for line in file_reader.read().splitlines():
+            s = [word for word in line.split()]
+            d.append(s)
+
+    return d
+
+
 def load_json_to_dict(filename):
     """Load json file to python dictionary
     Args:
