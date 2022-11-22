@@ -1,9 +1,13 @@
 # Phrase break prediction for Text-to-Speech systems
 
-This repository contains code to train speaker independent phrasing models for English Text-to-Speech systems. Currently the codebase supports two models
+This repository contains code to train speaker independent phrasing models for English Text-to-Speech systems. In text phrase breaks are usually represented by punctuation. Typically, Text-to-Speech systems insert phrase breaks in the synthesized speech whenever they encounter a comma in the text to be synthesized.
+
+Currently the codebase supports two models
 
     1. BLSTM token classification model using task specific word embeddings trained from scratch
-    2. Fine tuned BERT model with a token classification head  
+    2. Fine tuned BERT model with a token classification head
+
+Given unpunctuated text as input, these models punctuate the text with commas, and the text with predicted commas is then passed to the Text-to-Speech system to be synthesized.
 
 The models are trained using the LibriTTS alignments available at [kan-bayashi/LibriTTSLabel](https://github.com/kan-bayashi/LibriTTSLabel). The `train-clean-360` split is used for training, while the `dev-clean` and `test-clean` splits are used for validation and test respectively.
 
