@@ -26,7 +26,7 @@ class PhraseBreakDataset(Dataset):
         self.word_vocab = load_vocab_to_dict(os.path.join(data_dir, "vocab/words.txt"))
         self.punc_vocab = load_vocab_to_dict(os.path.join(data_dir, "vocab/puncs.txt"))
         # Load dataset / vocabulary params
-        params = load_json_to_dict(os.path.join(data_dir, "vocab/params.json"))
+        self.params = load_json_to_dict(os.path.join(data_dir, "vocab/params.json"))
 
         # Load sentence / punctuation sequences for the specified split
         self.sentences = read_dataset_file(os.path.join(data_dir, f"{split}/sentences.txt"))
@@ -34,9 +34,9 @@ class PhraseBreakDataset(Dataset):
         assert len(self.sentences) == len(self.punctuations)
 
         # Setting indices for _UNK_, _PAD_, and _X_ tokens
-        self.unk_idx = params["unk_token"]
-        self.pad_word_idx = params["pad_token_word"]
-        self.pad_punc_idx = params["pad_token_punc"]
+        self.unk_idx = self.params["unk_token"]
+        self.pad_word_idx = self.params["pad_token_word"]
+        self.pad_punc_idx = self.params["pad_token_punc"]
 
     def __len__(self):
         return len(self.sentences)
