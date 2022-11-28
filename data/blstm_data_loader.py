@@ -35,8 +35,7 @@ class PhraseBreakDataset(Dataset):
 
         # Setting indices for _UNK_, _PAD_, and _X_ tokens
         self.unk_idx = self.params["unk_token"]
-        self.pad_word_idx = self.params["pad_token_word"]
-        self.pad_punc_idx = self.params["pad_token_punc"]
+        self.pad_idx = self.params["pad_token"]
 
     def __len__(self):
         return len(self.sentences)
@@ -54,7 +53,7 @@ class PhraseBreakDataset(Dataset):
         sentences, punctuations = zip(*batch)
         sentences, punctuations = list(sentences), list(punctuations)
 
-        padded_sentences = pad_sequence(sentences, batch_first=True, padding_value=self.pad_word_idx)
-        padded_punctuations = pad_sequence(punctuations, batch_first=True, padding_value=self.pad_punc_idx)
+        padded_sentences = pad_sequence(sentences, batch_first=True, padding_value=self.pad_idx)
+        padded_punctuations = pad_sequence(punctuations, batch_first=True, padding_value=-1)
 
         return padded_sentences, padded_punctuations
