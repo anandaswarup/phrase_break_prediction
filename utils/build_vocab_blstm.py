@@ -3,7 +3,7 @@
 import argparse
 import os
 from collections import Counter
-from utils.utils import save_dict_to_json
+from utils import save_dict_to_json
 
 
 class VocabBuilder:
@@ -23,10 +23,7 @@ class VocabBuilder:
         # Padding and unknown tokens
         if token == "words":
             self._pad = "_PAD_"
-        else:
-            self._pad = "_X_"
-
-        self._unk = "_UNK_"
+            self._unk = "_UNK_"
 
     def _update_from_file(self, filename, c):
         """Update a counter from file
@@ -64,11 +61,10 @@ class VocabBuilder:
         # This will be mapped to "_UNK_"
         self.vocab = [token for token, count in c.items() if token != "<unk>" and count >= 10]
 
-        # Add padding and unknown tokens to the vocabulary
+        # Add padding and unknown tokens to the vocabulary (only in case where token is "words")
         if self.token == "words":
             self.vocab.insert(0, self._unk)
-
-        self.vocab.insert(0, self._pad)
+            self.vocab.insert(0, self._pad)
 
     def save_vocabulary(self):
         """Save the vocabulary to file"""
@@ -110,8 +106,7 @@ if __name__ == "__main__":
     params = {
         "num_words": len(words_vocab.vocab),
         "num_puncs": len(puncs_vocab.vocab),
-        "pad_token_word": words_vocab._pad,
-        "pad_token_punc": puncs_vocab._pad,
+        "pad_token": words_vocab._pad,
         "unk_token": words_vocab._unk,
     }
     save_dict_to_json(params, os.path.join(dataset_dir, "vocab/params.json"))
