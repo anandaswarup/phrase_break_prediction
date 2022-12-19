@@ -55,7 +55,7 @@ def save_dict_to_json(d, filename):
 
 
 def save_checkpoint(checkpoint_dir, model, optimizer, epoch):
-    """Save model checkpoint
+    """Save model checkpoint to disk
     Args:
         checkpoint_dir (str): Location where checkpoints will be written to disk
         model (torch model object): Model
@@ -73,11 +73,11 @@ def save_checkpoint(checkpoint_dir, model, optimizer, epoch):
 
 
 def load_checkpoint(checkpoint_path, model, optimizer):
-    """Load model checkpoint from disk
+    """Load model checkpoint from disk (to resume training)
     Args:
         checkpoint_path (str): Path to the checkpoint to be loaded
-        model (torch model object): Model
-        optimizer (torch optimizer object): Optimizer
+        model (torch.nn.Module): Model
+        optimizer (torch.optim): Optimizer
     """
     print(f"Loading checkpoint: {checkpoint_path} from disk")
 
@@ -86,3 +86,21 @@ def load_checkpoint(checkpoint_path, model, optimizer):
     optimizer.load_state_dict(checkpoint["optimizer"])
 
     return checkpoint["epoch"]
+
+
+def load_trained_model_for_eval(checkpoint_dir, best_epoch, model, device):
+    """Load best trained model from specified path (to test on held-out set)
+    Args:
+        checkpoint_dir (str): Dir containing all training checkpoints
+        best_epoch (int): Epoch for which model had best perforance on the dev set
+        model (torch.nn.Module): Model
+        device (torch.device): Device on which to load the trained model
+    """
+    checkpoint_path = os.path.join(checkpoint_dir, f"model_epoch{best_epoch:04d}.pth")
+    print(f"Loading trained model with best performance on dev set: {checkpoint_path} from disk for test")
+
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+
+    model.load_state_dict(checkpoint["model"])
+
+    return model
