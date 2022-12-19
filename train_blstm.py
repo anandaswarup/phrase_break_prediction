@@ -93,7 +93,6 @@ class Trainer:
         """Write log to file by writing one log item per line
         Args:
             filename (str): Path to the log file
-            log (list): The log items
         """
         with open(filename, "w") as file_writer:
             for line in self._training_log:
@@ -184,6 +183,12 @@ class Trainer:
             )
             print(log_string)
             self._training_log.append(log_string)
+
+        # Write training log to file
+        self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
+
+        # Write model/training config to file
+        save_dict_to_json(cfg, os.path.join(self.experiment_dir, "config.json"))
 
 
 if __name__ == "__main__":
