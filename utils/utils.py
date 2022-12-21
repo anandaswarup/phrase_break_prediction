@@ -88,16 +88,14 @@ def load_checkpoint(checkpoint_path, model, optimizer):
     return checkpoint["epoch"]
 
 
-def load_trained_model_for_eval(checkpoint_dir, best_epoch, model, device):
+def load_trained_model_for_eval(checkpoint_path, model, device):
     """Load best trained model from specified path (to test on held-out set)
     Args:
-        checkpoint_dir (str): Dir containing all training checkpoints
-        best_epoch (int): Epoch for which model had best perforance on the dev set
+        checkpoint_path (str): Checkpoint containing trained model state to be loaded for test
         model (torch.nn.Module): Model
         device (torch.device): Device on which to load the trained model
     """
-    checkpoint_path = os.path.join(checkpoint_dir, f"model_epoch{best_epoch:04d}.pth")
-    print(f"Loading trained model with best performance on dev set: {checkpoint_path} from disk for test")
+    print(f"Loading trained model: {checkpoint_path} from disk for test")
 
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
