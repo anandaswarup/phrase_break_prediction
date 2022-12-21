@@ -39,7 +39,7 @@ class Trainer:
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
         # Log
-        self._training_log = []
+        self._log = []
 
     def _get_device(self, device=None):
         """Get the device on which to train the model"""
@@ -182,12 +182,12 @@ class Trainer:
                 f"Epoch: {epoch + 1}, Train F1 Score: {epoch_f1_score_train}, Dev F1 Score: {epoch_f1_score_dev}"
             )
             print(log_string)
-            self._training_log.append(log_string)
+            self._log.append(log_string)
 
         # Write training log to file
         self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
 
-        # Write model/training config to file
+        # Write model and training config to file
         save_dict_to_json(cfg, os.path.join(self.experiment_dir, "config.json"))
 
 
@@ -252,4 +252,4 @@ if __name__ == "__main__":
     trainer = Trainer(args.experiment_dir, model, optimizer)
 
     # Train the model
-    trainer.fit(train_loader, dev_loader, cfg["num_epochs"], args.resume_checkpoint_path)
+    best_epoch, best_dev_f1 = trainer.fit(train_loader, dev_loader, cfg["num_epochs"], args.resume_checkpoint_path)
