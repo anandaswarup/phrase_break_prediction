@@ -72,29 +72,14 @@ def save_checkpoint(checkpoint_dir, model, optimizer, epoch):
     torch.save(checkpoint_state, checkpoint_path)
 
 
-def load_checkpoint(checkpoint_path, model, optimizer):
-    """Load model checkpoint from disk (to resume training)
+def load_checkpoint_to_evaluate_model(checkpoint_dir, epoch, model, device):
+    """Load trained model from specified path (to test on held-out set)
     Args:
-        checkpoint_path (str): Path to the checkpoint to be loaded
-        model (torch.nn.Module): Model
-        optimizer (torch.optim): Optimizer
-    """
-    print(f"Loading checkpoint: {checkpoint_path} from disk")
-
-    checkpoint = torch.load(checkpoint_path)
-    model.load_state_dict(checkpoint["model"])
-    optimizer.load_state_dict(checkpoint["optimizer"])
-
-    return checkpoint["epoch"]
-
-
-def load_trained_model_for_eval(checkpoint_path, model, device):
-    """Load best trained model from specified path (to test on held-out set)
-    Args:
-        checkpoint_path (str): Checkpoint containing trained model state to be loaded for test
+        checkpoint_dir (str): Dir containing training checkpoints
         model (torch.nn.Module): Model
         device (torch.device): Device on which to load the trained model
     """
+    checkpoint_path = os.path.join(checkpoint_dir, f"model_epoch{epoch:04d}.pth")
     print(f"Loading trained model: {checkpoint_path} from disk for test")
 
     checkpoint = torch.load(checkpoint_path, map_location=device)
