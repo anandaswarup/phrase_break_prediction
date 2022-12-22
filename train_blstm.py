@@ -252,4 +252,4 @@ if __name__ == "__main__":
     trainer = Trainer(args.experiment_dir, model, optimizer)
 
     # Train the model
-    best_epoch, best_dev_f1 = trainer.fit(train_loader, dev_loader, cfg["num_epochs"], args.resume_checkpoint_path)
+    trainer.fit(train_loader, dev_loader, cfg["num_epochs"], args.resume_checkpoint_path)
