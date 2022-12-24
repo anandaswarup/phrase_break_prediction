@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 
 from data.blstm_data_loader import PhraseBreakDataset
 from model.blstm import PhraseBreakPredictor
-from utils.utils import save_checkpoint, load_checkpoint, load_json_to_dict, save_dict_to_json
+from utils.utils import save_checkpoint, load_checkpoint_to_evaluate_model, load_json_to_dict, save_dict_to_json
 
 
 class Trainer:
@@ -149,46 +149,41 @@ class Trainer:
 
         return f1_score
 
-    def fit(self, train_loader, dev_loader, num_epochs, resume_checkpoint_path=None):
+    def fit(self, train_loader, dev_loader, num_epochs):
         """Train the model
         Args:
             train_loader (torch.utils.data.DataLoader): Dataloader for training set
             dev_loader (torch.utils.data.DataLoader): Dataloader for dev set
             num_epochs (int): Number of epochs to train the model
-            resume_checkpoint_path (str, optional): If specified, load checkpoint and resume training from that point
         """
         # Set random seeds (for reproducibility)
         torch.manual_seed(1234)
         if self.device.type == "cuda":
             torch.cuda.manual_seed(1234)
 
-        if resume_checkpoint_path is not None:
-            start_epoch = load_checkpoint(resume_checkpoint_path, self.model, self.optimizer)
-        else:
-            start_epoch = 0
-
-        for epoch in range(start_epoch, num_epochs):
+        best_epoch = 0
+        best_dev_f1 = 0.0
+        for epoch in range(0, num_epochs):
             # Train the model for one epoch
-            epoch_f1_score_train = self._train(train_loader)
+            train_f1_score = self._train(train_loader)
 
             # Evaluate the model after training for one epoch
-            epoch_f1_score_dev = self._eval(dev_loader)
+            dev_f1_score = self._eval(dev_loader)
+
+            # Check for the best dev F1 score
+            if dev_f1_score > best_dev_f1:
+                best_dev_f1 = dev_f1_score
+                best_epoch = epoch
 
             # Save checkpoint after training for one epoch
             save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
 
             # Log the training for one epoch
-            log_string = (
-                f"Epoch: {epoch + 1}, Train F1 Score: {epoch_f1_score_train}, Dev F1 Score: {epoch_f1_score_dev}"
-            )
-            print(log_string)
-            self._log.append(log_string)
+            epoch_log_string = f"epoch: {epoch + 1}, train F1 score: {train_f1_score}, dev F1 score: {dev_f1_score}"
+            print(epoch_log_string)
+            self._log.append(epoch_log_string)
 
-        # Write training log to file
-        self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
-
-        # Write model and training config to file
-        save_dict_to_json(cfg, os.path.join(self.experiment_dir, "config.json"))
+        return best_dev_f1, best_epoch
 
 
 if __name__ == "__main__":
@@ -203,7 +198,6 @@ if __name__ == "__main__":
     )
     parser.add_argument("--dataset_dir", help="Directory containing the processed dataset", required=True)
     parser.add_argument("--experiment_dir", help="Directory where the training artifacts will be saved", required=True)
-    parser.add_argument("--resume_checkpoint_path", help="If specified, load checkpoint and resume training")
 
     # Parse and get the command line arguments
     args = parser.parse_args()
@@ -252,4 +246,13 @@ if __name__ == "__main__":
     trainer = Trainer(args.experiment_dir, model, optimizer)
 
     # Train the model
-    trainer.fit(train_loader, dev_loader, cfg["num_epochs"], args.resume_checkpoint_path)
+    best_dev_f1, best_epoch = trainer.fit(train_loader, dev_loader, cfg["num_epochs"])
+
+    # Log training summary
+    training_summary_log_string = f"Training summary: best dev f1 score: {best_dev_f1} at epoch: {best_epoch + 1}"
+    print(training_summary_log_string)
+    trainer._log.append(training_summary_log_string)
+
+    # Write logs and configs to file
+    trainer._write_log_to_file(os.path.join(trainer.experiment_dir, "training_log.txt"))
+    save_dict_to_json(cfg, os.path.join(trainer.experiment_dir, "config.json"))
