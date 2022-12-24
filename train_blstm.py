@@ -81,11 +81,11 @@ class Trainer:
             labels (torch.Tensor): Actual ground truth labels
         """
         # Flatten ground truth labels
-        labels = labels.cpu().numpy()
+        labels = labels.detach().numpy()
         labels = labels.ravel()
 
         # np.argmax gives the class predicted for each token by the model
-        pred_labels = pred_labels.cpu().numpy()
+        pred_labels = pred_labels.detach().numpy()
         pred_labels = np.argmax(pred_labels, axis=1)
 
         return f1_score(labels, pred_labels, average="micro")
