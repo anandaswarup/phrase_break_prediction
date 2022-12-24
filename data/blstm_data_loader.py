@@ -34,8 +34,8 @@ class PhraseBreakDataset(Dataset):
         assert len(self.sentences) == len(self.punctuations)
 
         # Setting indices for _UNK_, _PAD_, and _X_ tokens
-        self.unk_idx = self.params["unk_token"]
-        self.pad_idx = self.params["pad_token"]
+        self.unk_idx = self.word_vocab[self.params["unk_token"]]
+        self.pad_idx = self.word_vocab[self.params["pad_token"]]
 
     def __len__(self):
         return len(self.sentences)
