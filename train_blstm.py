@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 
 from data.blstm_data_loader import PhraseBreakDataset
 from model.blstm import PhraseBreakPredictor
-from utils.utils import save_checkpoint, load_checkpoint_to_evaluate_model, load_json_to_dict, save_dict_to_json
+from utils.utils import save_checkpoint, load_json_to_dict, save_dict_to_json
 
 
 class Trainer:
@@ -56,23 +56,7 @@ class Trainer:
             pred_labels (torch.Tensor): Model predicted labels
             labels (torch.Tensor): Actual ground truth labels
         """
-        # [B, T_max] -> [B * T_max]
-        labels = labels.view(-1)
-
-        # Mask out the "_PAD_" tokens
-        mask = (labels >= 0).float()
-
-        # Number of tokens is the sum of elements in the mask
-        num_tokens = int(torch.sum(mask).data)
-        # num_tokens = torch.sum(mask).item()
-
-        # Apply mask to predictions
-        pred_labels = pred_labels[range(pred_labels.shape[0]), labels] * mask
-
-        # Compute cross-entropy loss for all non "_PAD_" tokens
-        loss = -torch.sum(pred_labels) / num_tokens
-
-        return loss
+        return F.nll_loss(pred_labels, labels.view(-1))
 
     def _compute_F1_score(self, pred_labels, labels):
         """Compute F1 score between predicted and ground truth labels
@@ -80,14 +64,13 @@ class Trainer:
             pred_labels (torch.Tensor): Model predicted labels
             labels (torch.Tensor): Actual ground truth labels
         """
-        with torch.no_grad():
-            # Flatten ground truth labels
-            labels = labels.cpu().numpy()
-            labels = labels.ravel()
+        # Flatten ground truth labels
+        labels = labels.data.cpu().numpy()
+        labels = labels.ravel()
 
-            # np.argmax gives the class predicted for each token by the model
-            pred_labels = pred_labels.cpu().numpy()
-            pred_labels = np.argmax(pred_labels, axis=1)
+        # np.argmax gives the class predicted for each token by the model
+        pred_labels = pred_labels.data.cpu().numpy()
+        pred_labels = np.argmax(pred_labels, axis=1)
 
         return f1_score(labels, pred_labels, average="micro")
 
@@ -97,7 +80,7 @@ class Trainer:
             filename (str): Path to the log file
         """
         with open(filename, "w") as file_writer:
-            for line in self._training_log:
+            for line in self._log:
                 file_writer.write(line + "\n")
 
         print(f"Written log file: {filename}")
@@ -163,19 +146,12 @@ class Trainer:
         if self.device.type == "cuda":
             torch.cuda.manual_seed(1234)
 
-        best_epoch = 0
-        best_dev_f1 = 0.0
         for epoch in range(0, num_epochs):
             # Train the model for one epoch
             train_f1_score = self._train(train_loader)
 
             # Evaluate the model after training for one epoch
             dev_f1_score = self._eval(dev_loader)
-
-            # Check for the best dev F1 score
-            if dev_f1_score > best_dev_f1:
-                best_dev_f1 = dev_f1_score
-                best_epoch = epoch
 
             # Save checkpoint after training for one epoch
             save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
@@ -185,7 +161,8 @@ class Trainer:
             print(epoch_log_string)
             self._log.append(epoch_log_string)
 
-        return best_dev_f1, best_epoch
+        # Write log to file
+        self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
 
 
 if __name__ == "__main__":
@@ -247,14 +224,5 @@ if __name__ == "__main__":
     # Instantiate the trainer
     trainer = Trainer(args.experiment_dir, model, optimizer)
 
-    # Train the model
-    best_dev_f1, best_epoch = trainer.fit(train_loader, dev_loader, cfg["num_epochs"])
-
-    # Log training summary
-    training_summary_log_string = f"Training summary: best dev f1 score: {best_dev_f1} at epoch: {best_epoch + 1}"
-    print(training_summary_log_string)
-    trainer._log.append(training_summary_log_string)
-
-    # Write logs and configs to file
-    trainer._write_log_to_file(os.path.join(trainer.experiment_dir, "training_log.txt"))
+    # Write training/model config to file
     save_dict_to_json(cfg, os.path.join(trainer.experiment_dir, "config.json"))
