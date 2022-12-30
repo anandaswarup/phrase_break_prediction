@@ -63,7 +63,7 @@ class Trainer:
         mask = (labels >= 0).float()
 
         # Number of tokens is the sum of elements in the mask
-        num_tokens = int(torch.sum(mask).data[0])
+        num_tokens = int(torch.sum(mask).data)
 
         # Apply mask to predictions
         pred_labels = pred_labels[range(pred_labels.shape[0]), labels] * mask
