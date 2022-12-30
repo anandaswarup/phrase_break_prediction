@@ -224,5 +224,8 @@ if __name__ == "__main__":
     # Instantiate the trainer
     trainer = Trainer(args.experiment_dir, model, optimizer)
 
+    # Train the model
+    trainer.fit(train_loader, dev_loader, cfg["num_epochs"])
+
     # Write training/model config to file
     save_dict_to_json(cfg, os.path.join(trainer.experiment_dir, "config.json"))
