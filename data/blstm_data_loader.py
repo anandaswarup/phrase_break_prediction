@@ -34,9 +34,8 @@ class PhraseBreakDataset(Dataset):
         assert len(self.sentences) == len(self.punctuations)
 
         # Setting indices for _UNK_, _PAD_, and _X_ tokens
-        self.word_unk_idx = self.word_vocab[self.params["words_unk_token"]]
-        self.word_pad_idx = self.word_vocab[self.params["words_pad_token"]]
-        self.punc_pad_idx = self.punc_vocab[self.params["puncs_pad_token"]]
+        self.unk_idx = self.word_vocab[self.params["unk_token"]]
+        self.pad_idx = self.word_vocab[self.params["pad_token"]]
 
     def __len__(self):
         return len(self.sentences)
@@ -44,7 +43,7 @@ class PhraseBreakDataset(Dataset):
     def __getitem__(self, index):
         sentence, punctuations = self.sentences[index], self.punctuations[index]
 
-        text_seq = [self.word_vocab[word] if word in self.word_vocab else self.word_unk_idx for word in sentence]
+        text_seq = [self.word_vocab[word] if word in self.word_vocab else self.unk_idx for word in sentence]
         punc_seq = [self.punc_vocab[punc] for punc in punctuations]
 
         return (torch.LongTensor(text_seq), torch.LongTensor(punc_seq))
@@ -54,7 +53,7 @@ class PhraseBreakDataset(Dataset):
         sentences, punctuations = zip(*batch)
         sentences, punctuations = list(sentences), list(punctuations)
 
-        padded_sentences = pad_sequence(sentences, batch_first=True, padding_value=self.word_pad_idx)
-        padded_punctuations = pad_sequence(punctuations, batch_first=True, padding_value=self.punc_pad_idx)
+        padded_sentences = pad_sequence(sentences, batch_first=True, padding_value=self.pad_idx)
+        padded_punctuations = pad_sequence(punctuations, batch_first=True, padding_value=-1)
 
         return padded_sentences, padded_punctuations
