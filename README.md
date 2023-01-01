@@ -37,7 +37,7 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
 
     ```json
     {
-        "embedding_dim": 300,
+        "embedding_dim": 50,
         "num_blstm_layers": 2,
         "blstm_layer_size": 512,
         "batch_size": 64,
