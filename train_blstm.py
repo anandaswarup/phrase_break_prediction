@@ -56,22 +56,7 @@ class Trainer:
             pred_labels (torch.Tensor): Model predicted labels
             labels (torch.Tensor): Actual ground truth labels
         """
-        # [B, T_max] -> [B * T_max]
-        labels = labels.view(-1)
-
-        # Mask out the "_PAD_" tokens
-        mask = (labels >= 0).float()
-
-        # Number of tokens is the sum of elements in the mask
-        num_tokens = int(torch.sum(mask).data)
-
-        # Apply mask to predictions
-        pred_labels = pred_labels[range(pred_labels.shape[0]), labels] * mask
-
-        # Compute cross-entropy loss for all non "_PAD_" tokens
-        loss = -torch.sum(pred_labels) / num_tokens
-
-        return loss
+        return F.nll_loss(pred_labels, labels.view(-1))
 
     def _compute_F1_score(self, pred_labels, labels):
         """Compute F1 score between predicted and ground truth labels
@@ -230,7 +215,7 @@ if __name__ == "__main__":
         num_blstm_layers=cfg["num_blstm_layers"],
         blstm_layer_size=cfg["blstm_layer_size"],
         num_puncs=len(train_set.punc_vocab),
-        padding_idx=train_set.pad_idx,
+        padding_idx=train_set.word_pad_idx,
     )
 
     # Instantiate the optimizer
