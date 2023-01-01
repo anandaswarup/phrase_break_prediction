@@ -24,6 +24,8 @@ class VocabBuilder:
         if token == "words":
             self._pad = "_PAD_"
             self._unk = "_UNK_"
+        elif token == "puncs":
+            self._pad = "_X_"
 
     def _update_from_file(self, filename, c):
         """Update a counter from file
@@ -57,13 +59,17 @@ class VocabBuilder:
         self._update_from_file(os.path.join(self.dataset_dir, f"test/{filename}"), c)
 
         # Only keep those tokens which occur atleast 10 times in the vocabulary. All tokens occurring less than 10 times
-        # will be replaced by "_UNK_". Also the LibriTTS Label dataset has a <unk> token.
-        # This will be mapped to "_UNK_"
-        self.vocab = [token for token, count in c.items() if token != "<unk>" and count >= 10]
+        # will be replaced by "_UNK_". Also the LibriTTS Label dataset has a <unk> token which is treated as "_UNK_".
+        if self.token == "words":
+            self.vocab = [token for token, count in c.items() if token != "<unk>" and count >= 10]
+        elif self.token == "puncs":
+            self.vocab = [token for token, _ in c.items()]
 
-        # Add padding and unknown tokens to the vocabulary (only in case where token is "words")
+        # Add padding and unknown tokens to the vocabulary
         if self.token == "words":
             self.vocab.insert(0, self._unk)
+            self.vocab.insert(0, self._pad)
+        elif self.token == "puncs":
             self.vocab.insert(0, self._pad)
 
     def save_vocabulary(self):
@@ -106,7 +112,8 @@ if __name__ == "__main__":
     params = {
         "num_words": len(words_vocab.vocab),
         "num_puncs": len(puncs_vocab.vocab),
-        "pad_token": words_vocab._pad,
-        "unk_token": words_vocab._unk,
+        "words_pad_token": words_vocab._pad,
+        "words_unk_token": words_vocab._unk,
+        "puncs_pad_token": puncs_vocab._pad,
     }
     save_dict_to_json(params, os.path.join(dataset_dir, "vocab/params.json"))
