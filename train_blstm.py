@@ -134,7 +134,7 @@ class Trainer:
 
         return f1_score
 
-    def fit(self, train_loader, dev_loader, num_epochs):
+    def fit(self, train_loader, dev_loader, test_loader, num_epochs):
         """Train the model
         Args:
             train_loader (torch.utils.data.DataLoader): Dataloader for training set
@@ -150,14 +150,18 @@ class Trainer:
             # Train the model for one epoch
             train_f1_score = self._train(train_loader)
 
-            # Evaluate the model after training for one epoch
+            # Evaluate the model on dev set after training for one epoch
             dev_f1_score = self._eval(dev_loader)
+
+            # Evaluate the model on test set after training for one epoch
+            test_f1_score = self._eval(test_loader)
 
             # Save checkpoint after training for one epoch
             save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
 
             # Log the training for one epoch
-            epoch_log_string = f"epoch: {epoch + 1}, train F1 score: {train_f1_score}, dev F1 score: {dev_f1_score}"
+            epoch_log_string = f"epoch: {epoch + 1}, train F1 score: {train_f1_score}, dev F1 score: {dev_f1_score}, \
+                test F1 score: {test_f1_score}"
             print(epoch_log_string)
             self._log.append(epoch_log_string)
 
@@ -185,7 +189,7 @@ if __name__ == "__main__":
     assert os.path.isfile(args.config_file), f"No config file found at {args.config_file}"
     cfg = load_json_to_dict(args.config_file)
 
-    # Instantiate the training and dev dataloaders
+    # Instantiate the training, dev and test dataloaders
     train_set = PhraseBreakDataset(args.dataset_dir, split="train")
     train_loader = DataLoader(
         train_set,
@@ -208,6 +212,17 @@ if __name__ == "__main__":
         drop_last=False,
     )
 
+    test_set = PhraseBreakDataset(args.dataset_dir, split="test")
+    test_loader = DataLoader(
+        test_set,
+        batch_size=1,
+        shuffle=False,
+        num_workers=1,
+        collate_fn=test_set.pad_collate,
+        pin_memory=False,
+        drop_last=False,
+    )
+
     # Instantiate the model
     model = PhraseBreakPredictor(
         num_words=len(train_set.word_vocab),
@@ -225,7 +240,7 @@ if __name__ == "__main__":
     trainer = Trainer(args.experiment_dir, model, optimizer)
 
     # Train the model
-    trainer.fit(train_loader, dev_loader, cfg["num_epochs"])
+    trainer.fit(train_loader, dev_loader, test_loader, cfg["num_epochs"])
 
     # Write training/model config to file
     save_dict_to_json(cfg, os.path.join(trainer.experiment_dir, "config.json"))
