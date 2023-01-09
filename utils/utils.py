@@ -72,7 +72,7 @@ def save_checkpoint(checkpoint_dir, model, optimizer, epoch):
     torch.save(checkpoint_state, checkpoint_path)
 
 
-def load_checkpoint_to_evaluate_model(checkpoint_path, epoch, model, device):
+def load_checkpoint_to_evaluate_model(checkpoint_path, model, device):
     """Load trained model from specified path (to test on held-out set)
     Args:
         checkpoint_path (str): Path to the model checkpoint to load
