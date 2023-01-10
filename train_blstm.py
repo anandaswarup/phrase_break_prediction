@@ -38,8 +38,8 @@ class Trainer:
         os.makedirs(self.experiment_dir, exist_ok=True)
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
-        # Log
-        self._log = []
+        # Training Log
+        self._training_log = []
 
     def _get_device(self, device=None):
         """Get the device on which to train the model"""
@@ -80,7 +80,7 @@ class Trainer:
             filename (str): Path to the log file
         """
         with open(filename, "w") as file_writer:
-            for line in self._log:
+            for line in self._training_log:
                 file_writer.write(line + "\n")
 
         print(f"Written log file: {filename}")
@@ -134,7 +134,7 @@ class Trainer:
 
         return f1_score
 
-    def fit(self, train_loader, dev_loader, test_loader, num_epochs):
+    def train(self, train_loader, dev_loader, num_epochs):
         """Train the model
         Args:
             train_loader (torch.utils.data.DataLoader): Dataloader for training set
@@ -153,17 +153,13 @@ class Trainer:
             # Evaluate the model on dev set after training for one epoch
             dev_f1_score = self._eval(dev_loader)
 
-            # Evaluate the model on test set after training for one epoch
-            test_f1_score = self._eval(test_loader)
-
             # Save checkpoint after training for one epoch
             save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
 
             # Log the training for one epoch
-            epoch_log_string = f"epoch: {epoch + 1}, train F1 score: {train_f1_score}, dev F1 score: {dev_f1_score}, \
-                test F1 score: {test_f1_score}"
-            print(epoch_log_string)
-            self._log.append(epoch_log_string)
+            log_string = f"epoch: {epoch + 1}, train F1 score: {train_f1_score}, dev F1 score: {dev_f1_score}"
+            print(log_string)
+            self._training_log.append(log_string)
 
         # Write log to file
         self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
@@ -212,17 +208,6 @@ if __name__ == "__main__":
         drop_last=False,
     )
 
-    test_set = PhraseBreakDataset(args.dataset_dir, split="test")
-    test_loader = DataLoader(
-        test_set,
-        batch_size=1,
-        shuffle=False,
-        num_workers=1,
-        collate_fn=test_set.pad_collate,
-        pin_memory=False,
-        drop_last=False,
-    )
-
     # Instantiate the model
     model = PhraseBreakPredictor(
         num_words=len(train_set.word_vocab),
@@ -240,7 +225,7 @@ if __name__ == "__main__":
     trainer = Trainer(args.experiment_dir, model, optimizer)
 
     # Train the model
-    trainer.fit(train_loader, dev_loader, test_loader, cfg["num_epochs"])
+    trainer.train(train_loader, dev_loader, cfg["num_epochs"])
 
     # Write training/model config to file
     save_dict_to_json(cfg, os.path.join(trainer.experiment_dir, "config.json"))
