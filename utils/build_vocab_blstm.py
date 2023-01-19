@@ -24,8 +24,6 @@ class VocabBuilder:
         if token == "words":
             self._pad = "_PAD_"
             self._unk = "_UNK_"
-        elif token == "puncs":
-            self._pad = "_X_"
 
     def _update_from_file(self, filename, c):
         """Update a counter from file
@@ -68,8 +66,7 @@ class VocabBuilder:
         # Add padding and unknown tokens to the vocabulary
         if self.token == "words":
             self.vocab.insert(0, self._unk)
-
-        self.vocab.insert(0, self._pad)
+            self.vocab.insert(0, self._pad)
 
     def save_vocabulary(self):
         """Save the vocabulary to file"""
@@ -113,6 +110,5 @@ if __name__ == "__main__":
         "num_puncs": len(puncs_vocab.vocab),
         "words_pad_token": words_vocab._pad,
         "words_unk_token": words_vocab._unk,
-        "puncs_pad_token": puncs_vocab._pad,
     }
     save_dict_to_json(params, os.path.join(dataset_dir, "vocab/params.json"))
