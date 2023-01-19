@@ -1,6 +1,6 @@
 # Phrase break prediction for Text-to-Speech systems
 
-This repository contains code to train speaker independent phrasing models for English Text-to-Speech systems. In text phrase breaks are usually represented by punctuation. Typically, Text-to-Speech systems insert phrase breaks in the synthesized speech whenever they encounter a comma in the text to be synthesized.
+This repository contains code to train speaker independent phrasing models for English Text-to-Speech systems. In text, phrase breaks are usually represented by punctuation. Typically, Text-to-Speech systems insert phrase breaks in the synthesized speech whenever they encounter a comma in the text to be synthesized.
 
 Currently the codebase supports two models
 
