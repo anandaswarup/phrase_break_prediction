@@ -54,6 +54,6 @@ class PhraseBreakDataset(Dataset):
         sentences, punctuations = list(sentences), list(punctuations)
 
         padded_sentences = pad_sequence(sentences, batch_first=True, padding_value=self.word_pad_idx)
-        padded_punctuations = pad_sequence(punctuations, batch_first=True, padding_value=-100)
+        padded_punctuations = pad_sequence(punctuations, batch_first=True, padding_value=-1)
 
         return padded_sentences, padded_punctuations
