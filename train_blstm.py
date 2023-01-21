@@ -1,4 +1,4 @@
-"""Train BLSTM token classification model using task specific word embeddings trained from scratch"""
+"""Train and evaluate the BLSTM token classification model using task specific word embeddings trained from scratch"""
 
 import argparse
 import os
@@ -39,7 +39,7 @@ class Trainer:
         os.makedirs(self.checkpoint_dir, exist_ok=True)
 
         # Training Log
-        self._training_log = []
+        self._log = []
 
     def _get_device(self, device=None):
         """Get the device on which to train the model"""
@@ -56,23 +56,7 @@ class Trainer:
             pred_labels (torch.Tensor): Model predicted labels
             labels (torch.Tensor): Actual ground truth labels
         """
-        return F.nll_loss(pred_labels, labels.view(-1))
-
-    def _compute_F1_score(self, pred_labels, labels):
-        """Compute F1 score between predicted and ground truth labels
-        Args:
-            pred_labels (torch.Tensor): Model predicted labels
-            labels (torch.Tensor): Actual ground truth labels
-        """
-        # Flatten ground truth labels
-        labels = labels.data.cpu().numpy()
-        labels = labels.ravel()
-
-        # np.argmax gives the class predicted for each token by the model
-        pred_labels = pred_labels.data.cpu().numpy()
-        pred_labels = np.argmax(pred_labels, axis=1)
-
-        return f1_score(labels, pred_labels, average="micro")
+        return F.nll_loss(pred_labels, labels.view(-1), ignore_index=-1, reduction="mean")
 
     def _write_log_to_file(self, filename):
         """Write log to file by writing one log item per line
@@ -80,7 +64,7 @@ class Trainer:
             filename (str): Path to the log file
         """
         with open(filename, "w") as file_writer:
-            for line in self._training_log:
+            for line in self._log:
                 file_writer.write(line + "\n")
 
         print(f"Written log file: {filename}")
@@ -89,7 +73,7 @@ class Trainer:
         """Train the model for one epoch"""
         self.model.train()
 
-        f1_score = 0.0
+        batch_loss = 0.0
         for idx, (sentences, punctuations) in enumerate(loader):
             # Place tensors on device
             sentences, punctuations = sentences.to(self.device), punctuations.to(self.device)
@@ -105,34 +89,33 @@ class Trainer:
             loss.backward()
             self.optimizer.step()
 
-            # Compute F1 score
-            f1_score += self._compute_F1_score(predicted_punctuations, punctuations)
+            # Update the batch loss
+            batch_loss += loss.item()
 
-        f1_score = f1_score / (idx + 1)
-        f1_score = round(f1_score * 100, 2)
+        batch_loss = batch_loss / (idx + 1)
 
-        return f1_score
+        return batch_loss
 
-    def _eval(self, loader):
+    def _evaluate(self, loader):
         """Evaluate the model"""
         self.model.eval()
 
         with torch.no_grad():
-            f1_score = 0.0
+            batch_loss = 0.0
             for idx, (sentences, punctuations) in enumerate(loader):
                 # Place tensors on device
                 sentences, punctuations = sentences.to(self.device), punctuations.to(self.device)
 
-                # Model predictions
+                # Model predictions and loss computation
                 predicted_punctuations = self.model(sentences)
+                loss = self._compute_loss(predicted_punctuations, punctuations)
 
-                # Compute F1 score
-                f1_score += self._compute_F1_score(predicted_punctuations, punctuations)
+                # Update the batch loss
+                batch_loss += loss.item()
 
-            f1_score = f1_score / (idx + 1)
-            f1_score = round(f1_score * 100, 2)
+            batch_loss = batch_loss / (idx + 1)
 
-        return f1_score
+        return batch_loss
 
     def train(self, train_loader, dev_loader, num_epochs):
         """Train the model
@@ -148,18 +131,18 @@ class Trainer:
 
         for epoch in range(0, num_epochs):
             # Train the model for one epoch
-            train_f1_score = self._train(train_loader)
+            train_loss = self._train(train_loader)
 
             # Evaluate the model on dev set after training for one epoch
-            dev_f1_score = self._eval(dev_loader)
+            dev_loss = self._evaluate(dev_loader)
 
             # Save checkpoint after training for one epoch
             save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
 
             # Log the training for one epoch
-            log_string = f"epoch: {epoch + 1}, train F1 score: {train_f1_score}, dev F1 score: {dev_f1_score}"
+            log_string = f"epoch: {epoch + 1}, train loss: {train_loss}, dev loss: {dev_loss}"
             print(log_string)
-            self._training_log.append(log_string)
+            self._log.append(log_string)
 
         # Write log to file
         self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
@@ -204,6 +187,17 @@ if __name__ == "__main__":
         shuffle=False,
         num_workers=1,
         collate_fn=dev_set.pad_collate,
+        pin_memory=False,
+        drop_last=False,
+    )
+
+    test_set = PhraseBreakDataset(args.dataset_dir, split="test")
+    test_loader = DataLoader(
+        test_set,
+        batch_size=cfg["batch_size"],
+        shuffle=False,
+        num_workers=1,
+        collate_fn=test_set.pad_collate,
         pin_memory=False,
         drop_last=False,
     )
