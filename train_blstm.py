@@ -139,7 +139,7 @@ class Trainer:
             save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
 
             # Log the training for one epoch
-            log_string = f"epoch: {epoch + 1}, train loss: {train_loss}, dev loss: {dev_loss}"
+            log_string = f"epoch: {epoch + 1}, train loss: {train_loss: .4f}, dev loss: {dev_loss: .4f}"
             print(log_string)
             self._log.append(log_string)
 
