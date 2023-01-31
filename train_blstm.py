@@ -80,7 +80,7 @@ class Trainer:
         pred_labels = pred_labels[idxs]
 
         # Compute the F1 score between labels and pred_labels
-        score = f1_score(labels, pred_labels, average="micro")
+        score = f1_score(labels, pred_labels, average="macro")
 
         return score
 
