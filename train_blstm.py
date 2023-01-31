@@ -7,7 +7,7 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-
+from sklearn.metrics import f1_score
 from data.blstm_data_loader import PhraseBreakDataset
 from model.blstm import PhraseBreakPredictor
 from utils.utils import save_checkpoint, load_json_to_dict, save_dict_to_json
@@ -49,13 +49,40 @@ class Trainer:
 
         return dev
 
-    def _compute_loss(self, pred_labels, labels):
-        """Compute negative-log likelihood loss between predicted and ground truth labels
+    def _compute_loss(self, pred_probs, labels):
+        """Compute negative log-likelihood loss between predicted probabilities and ground truth labels; excluding loss
+        terms for padding tokens i.e. tokens with index -1 in labels
         Args:
-            pred_labels (torch.Tensor): Model predicted labels
+            pred_probs (torch.Tensor): Model predicted probabilities
             labels (torch.Tensor): Actual ground truth labels
         """
-        return F.nll_loss(pred_labels, labels.view(-1), ignore_index=-1, reduction="mean")
+        return F.nll_loss(pred_probs, labels.view(-1), ignore_index=-1, reduction="mean")
+
+    def _compute_F1_score(self, pred_probs, labels):
+        """Compute F1 score between predicted probabilities and ground truth labels; excluding padding tokens
+        i.e. tokens with index -1 in labels
+        Args:
+            pred_probs (torch.Tensor): Model predicted probabilities
+            labels (torch.Tensor): Actual ground truth labels
+        """
+        labels = labels.view(-1)
+
+        # Convert everything to numpy.ndarrays
+        labels = labels.data.cpu().numpy()
+        pred_probs = pred_probs.data.cpu().numpy()
+
+        # np.argmax gives the class predicted for each token by the model
+        pred_labels = np.argmax(pred_probs, axis=-1)
+
+        # Find the indices corresponding to padding tokens in labels; and remove them from both labels and pred_labels
+        idxs = labels != 1
+        labels = labels[idxs]
+        pred_labels = pred_labels[idxs]
+
+        # Compute the F1 score between labels and pred_labels
+        score = f1_score(labels, pred_labels, average="micro")
+
+        return score
 
     def _write_log_to_file(self, filename):
         """Write log to file by writing one log item per line
@@ -72,7 +99,7 @@ class Trainer:
         """Train the model for one epoch"""
         self.model.train()
 
-        batch_loss = 0.0
+        avg_f1_score = 0.0
         for idx, (sentences, punctuations) in enumerate(loader):
             # Place tensors on device
             sentences, punctuations = sentences.to(self.device), punctuations.to(self.device)
@@ -81,40 +108,40 @@ class Trainer:
             self.optimizer.zero_grad()
 
             # Forward pass and loss computation
-            predicted_punctuations = self.model(sentences)
-            loss = self._compute_loss(predicted_punctuations, punctuations)
+            predicted_punctuation_probs = self.model(sentences)
+            loss = self._compute_loss(predicted_punctuation_probs, punctuations)
 
             # Backward pass (gradient computation and weight updates)
             loss.backward()
             self.optimizer.step()
 
-            # Update the batch loss
-            batch_loss += loss.item()
+            # Update the F1 score
+            avg_f1_score += self._compute_F1_score(predicted_punctuation_probs, punctuations)
 
-        batch_loss = batch_loss / (idx + 1)
+        avg_f1_score = avg_f1_score / (idx + 1)
 
-        return batch_loss
+        return avg_f1_score
 
     def _evaluate(self, loader):
         """Evaluate the model"""
         self.model.eval()
 
         with torch.no_grad():
-            batch_loss = 0.0
+            avg_f1_score = 0.0
             for idx, (sentences, punctuations) in enumerate(loader):
                 # Place tensors on device
                 sentences, punctuations = sentences.to(self.device), punctuations.to(self.device)
 
                 # Model predictions and loss computation
-                predicted_punctuations = self.model(sentences)
-                loss = self._compute_loss(predicted_punctuations, punctuations)
+                predicted_punctuation_probs = self.model(sentences)
+                _ = self._compute_loss(predicted_punctuation_probs, punctuations)
 
-                # Update the batch loss
-                batch_loss += loss.item()
+                # Update the F1 score
+                avg_f1_score += self._compute_F1_score(predicted_punctuation_probs, punctuations)
 
-            batch_loss = batch_loss / (idx + 1)
+            avg_f1_score = avg_f1_score / (idx + 1)
 
-        return batch_loss
+        return avg_f1_score
 
     def train(self, train_loader, dev_loader, num_epochs):
         """Train the model
@@ -128,20 +155,37 @@ class Trainer:
         if self.device.type == "cuda":
             torch.cuda.manual_seed(1234)
 
+        best_dev_F1_score = 0.0
         for epoch in range(0, num_epochs):
             # Train the model for one epoch
-            train_loss = self._train(train_loader)
+            train_F1_score = self._train(train_loader)
+            train_F1_score = train_F1_score * 100
 
             # Evaluate the model on dev set after training for one epoch
-            dev_loss = self._evaluate(dev_loader)
+            dev_F1_score = self._evaluate(dev_loader)
+            dev_F1_score = dev_F1_score * 100
+
+            # Check if the dev_F1_score is better than the best_dev_F1_score
+            is_best = dev_F1_score >= best_dev_F1_score
+
+            if is_best:
+                best_dev_F1_score = dev_F1_score
+                best_epoch = epoch + 1
 
             # Save checkpoint after training for one epoch
             save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
 
             # Log the training for one epoch
-            log_string = f"epoch: {epoch + 1}, train loss: {train_loss: .4f}, dev loss: {dev_loss: .4f}"
-            print(log_string)
-            self._log.append(log_string)
+            epoch_log_string = (
+                f"Epoch: {epoch + 1}, Train set F1: {train_F1_score: .2f}, Dev set F1: {dev_F1_score: .2f}"
+            )
+            print(epoch_log_string)
+            self._log.append(epoch_log_string)
+
+        # Training summary log
+        summary_log = f"Best Performing model - epoch: {best_epoch}, F1 score on dev set: {best_dev_F1_score: .2f}"
+        print(summary_log)
+        self._log.append(summary_log)
 
         # Write log to file
         self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
