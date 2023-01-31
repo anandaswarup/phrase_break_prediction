@@ -1,5 +1,5 @@
 {
-    "word_embedding_dim": 50,
+    "word_embedding_dim": 300,
     "num_blstm_layers": 2,
     "blstm_layer_size": 512,
     "batch_size": 64,
