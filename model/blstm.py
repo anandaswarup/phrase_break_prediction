@@ -1,7 +1,6 @@
 """Model definition for BLSTM token classification model using task specific word embeddings trained from scratch"""
 
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class PhraseBreakPredictor(nn.Module):
@@ -34,18 +33,15 @@ class PhraseBreakPredictor(nn.Module):
         # Output (fully connected layer)
         self.output = nn.Linear(in_features=blstm_layer_size, out_features=num_puncs)
 
-    def forward(self, x):
+    def forward(self, texts):
         """Forward pass"""
         # [B, T_max] -> [B, T_max, word_embedding_dim]
-        x = self.word_embedding(x)
+        embeddings = self.word_embedding(texts)
 
         # [B, T_max, word_embedding_dim] -> [B, T_max, blstm_size]
-        x, _ = self.blstm(x)
+        blstm_outputs, _ = self.blstm(embeddings)
 
-        # [B, T_max, blstm_size] -> [B * T_max, blstm_size]
-        x = x.reshape(-1, x.shape[2]).contiguous()
+        # [B, T_max, blstm_size] -> [B, T_max, num_puncs]
+        logits = self.output(blstm_outputs)
 
-        # [B * T_max, blstm_size] -> [B * T_max, num_puncs]
-        x = self.output(x)
-
-        return F.log_softmax(x, dim=1)
+        return logits
