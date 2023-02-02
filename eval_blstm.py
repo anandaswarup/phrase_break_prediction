@@ -93,5 +93,6 @@ if __name__ == "__main__":
 
     # Evaluate the model on the test set
     test_set_F1_score = evaluate_model(cfg, dataset_dir, model_checkpoint)
+    test_set_F1_score = test_set_F1_score * 100
 
     print(f"F1 Score on the Test Set: {test_set_F1_score:.2f}")
