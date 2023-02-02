@@ -30,6 +30,9 @@ class PhraseBreakPredictor(nn.Module):
             bidirectional=True,
         )
 
+        # Dropout layer
+        self.dropout_layer = nn.Dropout(p=0.5)
+
         # Output (fully connected layer)
         self.output = nn.Linear(in_features=blstm_layer_size, out_features=num_puncs)
 
@@ -40,6 +43,7 @@ class PhraseBreakPredictor(nn.Module):
 
         # [B, T_max, word_embedding_dim] -> [B, T_max, blstm_size]
         blstm_outputs, _ = self.blstm(embeddings)
+        blstm_outputs = self.dropout_layer(blstm_outputs)
 
         # [B, T_max, blstm_size] -> [B, T_max, num_puncs]
         logits = self.output(blstm_outputs)
