@@ -13,182 +13,181 @@ from model.blstm import PhraseBreakPredictor
 from utils.utils import save_checkpoint, load_json_to_dict, save_dict_to_json
 
 
-class Trainer:
-    """Trainer class (Handles the model training process)"""
+def _write_log_to_file(log, filename):
+    """Write the training log to file by writing one log item per line"""
+    with open(filename, "w") as file_writer:
+        for line in log:
+            file_writer.write(line + "\n")
 
-    def __init__(self, experiment_dir, model, optimizer, device=None):
-        """Instantiate the trainer
-        Args:
-            experiment_dir (str): Folder where all training artifacts will be saved to disk
-            model (torch.nn.Module): The model to be trained
-            optimizer (torch.optim): Optimizer to be used to train the model
-            device (str, optional): Device on which to train the model
-        """
-        self.model = model
-        self.optimizer = optimizer
-        self.device = self._get_device(device)
+    print(f"Written log file: {filename}")
 
-        # Send model to device
-        self.model.to(self.device)
 
-        # Create directories to save all training artifacts
-        self.experiment_dir = experiment_dir
-        self.checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
-        os.makedirs(self.experiment_dir, exist_ok=True)
-        os.makedirs(self.checkpoint_dir, exist_ok=True)
+def _remove_predictions_for_padded_tokens(pred_puncs, puncs):
+    """Remove predictions corresponding to padded tokens"""
+    pred_puncs_without_padded = []
+    puncs_without_padded = []
 
-        # Training Log
-        self._log = []
+    for pred_punc, punc in zip(pred_puncs, puncs):
+        if punc > -1:
+            pred_puncs_without_padded.append(pred_punc)
+            puncs_without_padded.append(punc)
 
-    def _get_device(self, device=None):
-        """Get the device on which to train the model"""
-        if device is None:
-            dev = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        else:
-            dev = device
+    return pred_puncs_without_padded, puncs_without_padded
 
-        return dev
 
-    def _compute_loss(self, pred_probs, labels):
-        """Compute negative log-likelihood loss between predicted probabilities and ground truth labels; excluding loss
-        terms for padding tokens i.e. tokens with index -1 in labels
-        Args:
-            pred_probs (torch.Tensor): Model predicted probabilities
-            labels (torch.Tensor): Actual ground truth labels
-        """
-        return F.nll_loss(pred_probs, labels.view(-1), ignore_index=-1, reduction="mean")
+def _eval(model, device, loader):
+    """Evaluate the model"""
+    model.eval()
+    with torch.no_grad():
+        puncs_predictions, puncs_correct = [], []
+        for texts, puncs in loader:
+            # Place the tensors on the appropriate device
+            texts, puncs = texts.to(device), puncs.to(device)
 
-    def _compute_F1_score(self, pred_probs, labels):
-        """Compute F1 score between predicted probabilities and ground truth labels; excluding padding tokens
-        i.e. tokens with index -1 in labels
-        Args:
-            pred_probs (torch.Tensor): Model predicted probabilities
-            labels (torch.Tensor): Actual ground truth labels
-        """
-        labels = labels.view(-1)
+            # Forward pass (predictions)
+            pred_probs = model(texts)
+            pred_probs = pred_probs.view(-1, pred_probs.shape[2]).contiguous()
 
-        # Convert everything to numpy.ndarrays
-        labels = labels.data.cpu().numpy()
-        pred_probs = pred_probs.data.cpu().numpy()
+            # Reshape ground truth
+            puncs = puncs.view(-1).contiguous()
 
-        # np.argmax gives the class predicted for each token by the model
-        pred_labels = np.argmax(pred_probs, axis=-1)
+            # Find the class predicted for each token by the model
+            _, pred_puncs = torch.max(pred_probs, 1)
 
-        # Find the indices corresponding to padding tokens in labels; and remove them from both labels and pred_labels
-        idxs = labels != 1
-        labels = labels[idxs]
-        pred_labels = pred_labels[idxs]
+            # Remove predictions corresponding to padded tokens
+            pred_puncs = list(pred_puncs.cpu().numpy())
+            puncs = list(puncs.cpu().numpy())
+            pred_puncs, puncs = _remove_predictions_for_padded_tokens(pred_puncs, puncs)
 
-        # Compute the F1 score between labels and pred_labels
-        score = f1_score(labels, pred_labels, average="macro")
+            puncs_predictions += pred_puncs
+            puncs_correct += puncs
 
-        return score
+    model.train()
 
-    def _write_log_to_file(self, filename):
-        """Write log to file by writing one log item per line
-        Args:
-            filename (str): Path to the log file
-        """
-        with open(filename, "w") as file_writer:
-            for line in self._log:
-                file_writer.write(line + "\n")
+    return f1_score(puncs_correct, puncs_predictions, average="micro")
 
-        print(f"Written log file: {filename}")
 
-    def _train(self, loader):
-        """Train the model for one epoch"""
-        self.model.train()
+def train_and_evaluate_model(cfg, dataset_dir, experiment_dir):
+    """Train the model and periodically evaluate it on the dev set"""
+    # Set all random seeds (for reproducibility)
+    torch.manual_seed(1234)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(1234)
 
-        avg_f1_score = 0.0
-        for idx, (sentences, punctuations) in enumerate(loader):
-            # Place tensors on device
-            sentences, punctuations = sentences.to(self.device), punctuations.to(self.device)
+    # Create all directories
+    checkpoint_dir = os.path.join(experiment_dir, "checkpoints")
+    os.makedirs(experiment_dir, exist_ok=True)
+    os.makedirs(checkpoint_dir, exist_ok=True)
+
+    # Instantiate the dataloaders for the train and dev splits
+    train_dataset = PhraseBreakDataset(dataset_dir, split="train")
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=cfg["batch_size"],
+        shuffle=True,
+        num_workers=8,
+        collate_fn=train_dataset.pad_collate,
+        pin_memory=True,
+        drop_last=True,
+    )
+
+    dev_dataset = PhraseBreakDataset(dataset_dir, split="dev")
+    dev_loader = DataLoader(
+        dev_dataset,
+        batch_size=cfg["batch_size"],
+        shuffle=False,
+        num_workers=1,
+        collate_fn=dev_dataset.pad_collate,
+        pin_memory=False,
+        drop_last=False,
+    )
+
+    # Specify the device to be used for training
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # Instantite the model
+    model = PhraseBreakPredictor(
+        num_words=len(train_dataset.word_vocab),
+        word_embedding_dim=cfg["word_embedding_dim"],
+        num_blstm_layers=cfg["num_blstm_layers"],
+        blstm_layer_size=cfg["blstm_layer_size"],
+        num_puncs=len(train_dataset.punc_vocab),
+        padding_idx=train_dataset.word_pad_idx,
+    )
+    model = model.to(device)
+
+    # Instantiate the optimizer
+    optimizer = optim.adam(model.parameters(), lr=cfg["lr"])
+
+    # Specify the criterion to train the model
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
+
+    model.train()
+
+    best_dev_F1_score = 0.0
+    training_log = []
+    for epoch in range(0, cfg["num_epochs"]):
+        # Train step
+        puncs_predictions, puncs_correct = [], []
+        for texts, puncs in train_loader:
+            # Place the tensors on the appropriate device
+            texts, puncs = texts.to(device), puncs.to(device)
 
             # Clear all previous gradients
-            self.optimizer.zero_grad()
+            optimizer.zero_grad()
 
-            # Forward pass and loss computation
-            predicted_punctuation_probs = self.model(sentences)
-            loss = self._compute_loss(predicted_punctuation_probs, punctuations)
+            # Forward pass (predictions)
+            pred_probs = model(texts)
+            pred_probs = pred_probs.view(-1, pred_probs.shape[2]).contiguous()
 
-            # Backward pass (gradient computation and weight updates)
+            # Reshape ground truth
+            puncs = puncs.view(-1).contiguous()
+
+            # Loss Computation
+            loss = criterion(pred_probs, puncs)
+
+            # Backward pass (Gradient computation and weight update)
             loss.backward()
-            self.optimizer.step()
+            optimizer.step()
 
-            # Update the F1 score
-            avg_f1_score += self._compute_F1_score(predicted_punctuation_probs, punctuations)
+            # Find the class predicted for each token by the model
+            _, pred_puncs = torch.max(pred_probs, 1)
 
-        avg_f1_score = avg_f1_score / (idx + 1)
+            # Remove predictions corresponding to padded tokens
+            pred_puncs = list(pred_puncs.cpu().numpy())
+            puncs = list(puncs.cpu().numpy())
+            pred_puncs, puncs = _remove_predictions_for_padded_tokens(pred_puncs, puncs)
 
-        return avg_f1_score
+            puncs_predictions += pred_puncs
+            puncs_correct += puncs
 
-    def _evaluate(self, loader):
-        """Evaluate the model"""
-        self.model.eval()
+        train_F1_score = f1_score(puncs_correct, puncs_predictions, average="micro")
+        train_F1_score = train_F1_score * 100
 
-        with torch.no_grad():
-            avg_f1_score = 0.0
-            for idx, (sentences, punctuations) in enumerate(loader):
-                # Place tensors on device
-                sentences, punctuations = sentences.to(self.device), punctuations.to(self.device)
+        # Eval step
+        dev_F1_score = _eval(model, device, dev_loader)
+        dev_F1_score = dev_F1_score * 100
 
-                # Model predictions and loss computation
-                predicted_punctuation_probs = self.model(sentences)
-                _ = self._compute_loss(predicted_punctuation_probs, punctuations)
+        # Check if the dev_F1_score is better than the best_dev_F1_score
+        is_best = dev_F1_score >= best_dev_F1_score
+        if is_best:
+            best_dev_F1_score = dev_F1_score
+            best_epoch = epoch + 1
 
-                # Update the F1 score
-                avg_f1_score += self._compute_F1_score(predicted_punctuation_probs, punctuations)
+        # Save checkpoint after training for one epoch
+        save_checkpoint(checkpoint_dir, model, optimizer, epoch + 1)
 
-            avg_f1_score = avg_f1_score / (idx + 1)
+        # Log training for one epoch
+        epoch_log_string = f"Epoch: {epoch + 1}, Train Set F1: {train_F1_score:.2f}, Dev Set F1: {dev_F1_score:.2f}"
+        print(epoch_log_string)
+        training_log.append(epoch_log_string)
 
-        return avg_f1_score
+    # Training summary
+    summary_log_string = f"Best performing model - Epoch: {best_epoch}, F1 Score on Dev Set: {best_dev_F1_score:.2f}"
+    print(summary_log_string)
+    training_log.append(summary_log_string)
 
-    def train(self, train_loader, dev_loader, num_epochs):
-        """Train the model
-        Args:
-            train_loader (torch.utils.data.DataLoader): Dataloader for training set
-            dev_loader (torch.utils.data.DataLoader): Dataloader for dev set
-            num_epochs (int): Number of epochs to train the model
-        """
-        # Set random seeds (for reproducibility)
-        torch.manual_seed(1234)
-        if self.device.type == "cuda":
-            torch.cuda.manual_seed(1234)
-
-        best_dev_F1_score = 0.0
-        for epoch in range(0, num_epochs):
-            # Train the model for one epoch
-            train_F1_score = self._train(train_loader)
-            train_F1_score = train_F1_score * 100
-
-            # Evaluate the model on dev set after training for one epoch
-            dev_F1_score = self._evaluate(dev_loader)
-            dev_F1_score = dev_F1_score * 100
-
-            # Check if the dev_F1_score is better than the best_dev_F1_score
-            is_best = dev_F1_score >= best_dev_F1_score
-
-            if is_best:
-                best_dev_F1_score = dev_F1_score
-                best_epoch = epoch + 1
-
-            # Save checkpoint after training for one epoch
-            save_checkpoint(self.checkpoint_dir, self.model, self.optimizer, epoch + 1)
-
-            # Log the training for one epoch
-            epoch_log_string = (
-                f"Epoch: {epoch + 1}, Train set F1: {train_F1_score: .2f}, Dev set F1: {dev_F1_score: .2f}"
-            )
-            print(epoch_log_string)
-            self._log.append(epoch_log_string)
-
-        # Training summary log
-        summary_log = f"Best Performing model - epoch: {best_epoch}, F1 score on dev set: {best_dev_F1_score: .2f}"
-        print(summary_log)
-        self._log.append(summary_log)
-
-        # Write log to file
-        self._write_log_to_file(os.path.join(self.experiment_dir, "training_log.txt"))
+    return training_log
 
 
 if __name__ == "__main__":
@@ -207,62 +206,17 @@ if __name__ == "__main__":
     # Parse and get the command line arguments
     args = parser.parse_args()
 
+    config_file = args.config_file
+    dataset_dir = args.dataset_dir
+    experiment_dir = args.experiment_dir
+
     # Load configuration from file
     assert os.path.isfile(args.config_file), f"No config file found at {args.config_file}"
-    cfg = load_json_to_dict(args.config_file)
+    cfg = load_json_to_dict(config_file)
 
-    # Instantiate the training, dev and test dataloaders
-    train_set = PhraseBreakDataset(args.dataset_dir, split="train")
-    train_loader = DataLoader(
-        train_set,
-        batch_size=cfg["batch_size"],
-        shuffle=True,
-        num_workers=8,
-        collate_fn=train_set.pad_collate,
-        pin_memory=True,
-        drop_last=True,
-    )
+    # Train the model and evaluate it periodically on the dev set
+    training_log = train_and_evaluate_model(cfg, dataset_dir, experiment_dir)
 
-    dev_set = PhraseBreakDataset(args.dataset_dir, split="dev")
-    dev_loader = DataLoader(
-        dev_set,
-        batch_size=cfg["batch_size"],
-        shuffle=False,
-        num_workers=1,
-        collate_fn=dev_set.pad_collate,
-        pin_memory=False,
-        drop_last=False,
-    )
-
-    test_set = PhraseBreakDataset(args.dataset_dir, split="test")
-    test_loader = DataLoader(
-        test_set,
-        batch_size=cfg["batch_size"],
-        shuffle=False,
-        num_workers=1,
-        collate_fn=test_set.pad_collate,
-        pin_memory=False,
-        drop_last=False,
-    )
-
-    # Instantiate the model
-    model = PhraseBreakPredictor(
-        num_words=len(train_set.word_vocab),
-        word_embedding_dim=cfg["word_embedding_dim"],
-        num_blstm_layers=cfg["num_blstm_layers"],
-        blstm_layer_size=cfg["blstm_layer_size"],
-        num_puncs=len(train_set.punc_vocab),
-        padding_idx=train_set.word_pad_idx,
-    )
-
-    # Instantiate the optimizer
-    optimizer = optim.Adam(model.parameters(), lr=cfg["lr"])
-
-    # Instantiate the trainer
-    trainer = Trainer(args.experiment_dir, model, optimizer)
-
-    # Train the model
-    trainer.train(train_loader, dev_loader, cfg["num_epochs"])
-
-    # Write training/model config to file
-    save_dict_to_json(cfg, os.path.join(trainer.experiment_dir, "config.json"))
+    # Write training log and training configs to file
+    _write_log_to_file(training_log, os.path.join(experiment_dir, "training_log.txt"))
+    save_dict_to_json(cfg, os.path.join(experiment_dir, "config.json"))
