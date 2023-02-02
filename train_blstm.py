@@ -117,7 +117,7 @@ def train_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     model = model.to(device)
 
     # Instantiate the optimizer
-    optimizer = optim.adam(model.parameters(), lr=cfg["lr"])
+    optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr"])
 
     # Specify the criterion to train the model
     criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
