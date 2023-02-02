@@ -60,7 +60,7 @@ def evaluate_model(cfg, dataset_dir, model_checkpoint):
 
     test_set_F1_score = f1_score(puncs_correct, puncs_predictions, average="micro")
 
-    print(f"F1 score on the Test Set: {test_set_F1_score:.2f}")
+    return test_set_F1_score
 
 
 if __name__ == "__main__":
@@ -92,4 +92,6 @@ if __name__ == "__main__":
     cfg = load_json_to_dict(config_file)
 
     # Evaluate the model on the test set
-    evaluate_model(cfg, dataset_dir, model_checkpoint)
+    test_set_F1_score = evaluate_model(cfg, dataset_dir, model_checkpoint)
+
+    print(f"F1 Score on the Test Set: {test_set_F1_score:.2f}")
