@@ -81,13 +81,11 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
 
             # Find punctuation predicted for each word by the model
             _, pred_puncs_seq = torch.max(pred_probs_seq, 1)
-            pred_puncs_seq = list(pred_puncs_seq.cpu().numpy())
-            pred_puncs_seq = [inv_punc_vocab[cid] for cid in pred_puncs_seq]
+            pred_puncs = list(pred_puncs_seq.cpu().numpy())
+            pred_puncs = [inv_punc_vocab[cid] for cid in pred_puncs]
 
-            punc_text_seq = [
-                token for word_punc_pair in zip(unpunc_text_seq, pred_puncs_seq) for token in word_punc_pair
-            ]
-            print(punc_text_seq)
+            punc_text = [token for word_punc_pair in zip(unpunc_text, pred_puncs) for token in word_punc_pair]
+            print(punc_text)
 
 
 if __name__ == "__main__":
