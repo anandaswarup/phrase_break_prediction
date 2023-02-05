@@ -53,7 +53,7 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
         num_blstm_layers=cfg["num_blstm_layers"],
         blstm_layer_size=cfg["blstm_layer_size"],
         num_puncs=len(punc_vocab),
-        padding_idx=word_vocab[vocab_params["word_pad_token"]],
+        padding_idx=word_vocab[vocab_params["words_pad_token"]],
     )
     model = model.to(device)
 
