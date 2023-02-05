@@ -84,10 +84,10 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
             pred_puncs_seq = list(pred_puncs_seq.cpu().numpy())
             pred_puncs_seq = [inv_punc_vocab[cid] for cid in pred_puncs_seq]
 
-            punctuated_text = [
+            punc_text_seq = [
                 token for word_punc_pair in zip(unpunc_text_seq, pred_puncs_seq) for token in word_punc_pair
             ]
-            print(" ".join(punctuated_text))
+            print(punc_text_seq)
 
 
 if __name__ == "__main__":
