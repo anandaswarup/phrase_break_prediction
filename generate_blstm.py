@@ -114,4 +114,4 @@ if __name__ == "__main__":
     cfg = load_json_to_dict(args.config_file)
 
     # Generate text with punctuations using the trained model
-    generate_punctuations(args, args.in_text_file, args.vocab_dir, args.model_checkpoint, args.out_text_file)
+    generate_punctuations(cfg, args.in_text_file, args.vocab_dir, args.model_checkpoint, args.out_text_file)
