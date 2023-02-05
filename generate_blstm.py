@@ -66,6 +66,8 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
             print(f"Processing {fileid}")
 
             # Convert the unpunctuated text to sequence of word ids; for prediction by the model
+            unpunc_text = unpunc_text.replace(",", " ")
+            unpunc_text = unpunc_text.replace(".", " ")
             unpunc_text = [word for word in unpunc_text.split()]
             unpunc_text_seq = torch.LongTensor(
                 [
