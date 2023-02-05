@@ -89,6 +89,7 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
             punc_text.replace("_NONE_", " ")
             punc_text.replace("_COMMA_", ",")
             punc_text.replace("_PERIOD_", ".")
+            print(punc_text)
 
 
 if __name__ == "__main__":
