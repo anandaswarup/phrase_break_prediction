@@ -76,8 +76,8 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
             unpunc_text_seq = unpunc_text_seq.to(device)
 
             # Predict sequence of punctuation probabilities using the trained model
-            pred_prob_seq = model(unpunc_text_seq)
-            pred_probs_seq = pred_prob_seq.view(-1, pred_probs_seq.shape[2]).contiguous()
+            pred_probs_seq = model(unpunc_text_seq)
+            pred_probs_seq = pred_probs_seq.view(-1, pred_probs_seq.shape[2]).contiguous()
 
             # Find punctuation predicted for each word by the model
             _, pred_puncs_seq = torch.max(pred_probs_seq, 1)
