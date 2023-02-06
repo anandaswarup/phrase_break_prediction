@@ -92,6 +92,7 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
                 pred_puncs = [inv_punc_vocab[cid] for cid in pred_puncs]
 
                 punc_text = [token for word_punc_pair in zip(unpunc_text, pred_puncs) for token in word_punc_pair]
+                punc_text = " ".join(punc_text)
 
                 punc_text = punc_text.replace(" _NONE_ ", " ")
                 punc_text = punc_text.replace(" _COMMA_ ", ", ")
