@@ -67,7 +67,6 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
 
             # Split the paragraph into constituent sentences
             unpunc_paragraph = [sentence.strip() for sentence in unpunc_paragraph.split(".") if sentence != ""]
-            print(unpunc_paragraph)
 
             punc_paragraph = []
 
@@ -94,10 +93,10 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
 
                 punc_text = [token for word_punc_pair in zip(unpunc_text, pred_puncs) for token in word_punc_pair]
                 punc_text = " ".join(punc_text)
-                
+
                 punc_text = punc_text.replace(" _NONE_ ", " ")
                 punc_text = punc_text.replace(" _COMMA_ ", ", ")
-                punc_text = punc_text.replace(" _PERIOD_ ", ".")
+                punc_text = punc_text.replace(" _PERIOD_", ".")
 
                 print(punc_text)
 
