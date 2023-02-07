@@ -69,11 +69,10 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
             unpunc_paragraph = [sentence.strip() for sentence in unpunc_paragraph.split(".") if sentence != ""]
             print(unpunc_paragraph)
 
-            # punc_paragraph = []
+            punc_paragraph = []
 
             # Process each sentence in the paragraph
             for unpunc_text in unpunc_paragraph:
-                # print(unpunc_text)
                 # Convert the unpunctuated text to sequence of word ids; for prediction by the model
                 unpunc_text = [word for word in unpunc_text.split()]
                 unpunc_text_seq = torch.LongTensor(
@@ -95,7 +94,7 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
 
                 punc_text = [token for word_punc_pair in zip(unpunc_text, pred_puncs) for token in word_punc_pair]
                 punc_text = " ".join(punc_text)
-                # print(punc_text)
+                print(punc_text)
                 # punc_text = punc_text.replace(" _NONE_ ", " ")
                 # punc_text = punc_text.replace(" _COMMA_ ", ", ")
                 # punc_text = punc_text.replace(" _PERIOD_ ", ".")
