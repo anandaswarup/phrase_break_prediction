@@ -66,7 +66,7 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
             print(f"Processing {fileid}")
 
             # Split the paragraph into constituent sentences
-            unpunc_paragraph = [sentence for sentence in unpunc_paragraph.split(".") if sentence != ""]
+            unpunc_paragraph = [sentence.strip() for sentence in unpunc_paragraph.split(".") if sentence != ""]
 
             # punc_paragraph = []
 
