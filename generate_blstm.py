@@ -62,45 +62,50 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
 
     model.eval()
     with torch.no_grad():
-        for fileid, unpunc_paragraph in text_instances:
-            print(f"Processing {fileid}")
+        with open(out_file, "w") as file_writer:
+            for fileid, unpunc_paragraph in text_instances:
+                print(f"Processing {fileid}")
 
-            # Split the paragraph into constituent sentences
-            unpunc_paragraph = [sentence.strip() for sentence in unpunc_paragraph.split(".") if sentence != ""]
+                # Split the paragraph into constituent sentences
+                unpunc_paragraph = [sentence.strip() for sentence in unpunc_paragraph.split(".") if sentence != ""]
 
-            punc_paragraph = []
+                punc_paragraph = []
 
-            # Process each sentence in the paragraph
-            for unpunc_text in unpunc_paragraph:
-                # Convert the unpunctuated text to sequence of word ids; for prediction by the model
-                unpunc_text = [word for word in unpunc_text.split()]
-                unpunc_text_seq = torch.LongTensor(
-                    [
-                        word_vocab[word] if word in word_vocab else word_vocab[vocab_params["words_unk_token"]]
-                        for word in unpunc_text
-                    ]
-                ).unsqueeze(0)
-                unpunc_text_seq = unpunc_text_seq.to(device)
+                # Process each sentence in the paragraph
+                for unpunc_text in unpunc_paragraph:
+                    # Convert the unpunctuated text to sequence of word ids; for prediction by the model
+                    unpunc_text = [word for word in unpunc_text.split()]
+                    unpunc_text_seq = torch.LongTensor(
+                        [
+                            word_vocab[word] if word in word_vocab else word_vocab[vocab_params["words_unk_token"]]
+                            for word in unpunc_text
+                        ]
+                    ).unsqueeze(0)
+                    unpunc_text_seq = unpunc_text_seq.to(device)
 
-                # Predict sequence of punctuation probabilities using the trained model
-                pred_probs_seq = model(unpunc_text_seq)
-                pred_probs_seq = pred_probs_seq.view(-1, pred_probs_seq.shape[2]).contiguous()
+                    # Predict sequence of punctuation probabilities using the trained model
+                    pred_probs_seq = model(unpunc_text_seq)
+                    pred_probs_seq = pred_probs_seq.view(-1, pred_probs_seq.shape[2]).contiguous()
 
-                # Find punctuation predicted for each word by the model
-                _, pred_puncs_seq = torch.max(pred_probs_seq, 1)
-                pred_puncs = list(pred_puncs_seq.cpu().numpy())
-                pred_puncs = [inv_punc_vocab[cid] for cid in pred_puncs]
+                    # Find punctuation predicted for each word by the model
+                    _, pred_puncs_seq = torch.max(pred_probs_seq, 1)
+                    pred_puncs = list(pred_puncs_seq.cpu().numpy())
+                    pred_puncs = [inv_punc_vocab[cid] for cid in pred_puncs]
 
-                punc_text = [token for word_punc_pair in zip(unpunc_text, pred_puncs) for token in word_punc_pair]
-                punc_text = " ".join(punc_text)
+                    punc_text = [token for word_punc_pair in zip(unpunc_text, pred_puncs) for token in word_punc_pair]
+                    punc_text = " ".join(punc_text)
 
-                punc_text = punc_text.replace(" _NONE_ ", " ")
-                punc_text = punc_text.replace(" _COMMA_ ", ", ")
-                punc_text = punc_text.replace(" _PERIOD_", ".")
+                    punc_text = punc_text.replace(" _NONE_ ", " ")
+                    punc_text = punc_text.replace(" _COMMA_ ", ", ")
+                    punc_text = punc_text.replace(" _PERIOD_", ".")
 
-                punc_paragraph.append(punc_text)
+                    punc_paragraph.append(punc_text)
 
-            print(" ".join(punc_paragraph))
+                # Generate the paragraph with predicted punctuations
+                punc_paragraph = " ".join(punc_paragraph)
+
+                # Write the paragraph with predicted punctuations to file
+                file_writer.write(fileid + "|" + punc_paragraph + "\n")
 
 
 if __name__ == "__main__":
