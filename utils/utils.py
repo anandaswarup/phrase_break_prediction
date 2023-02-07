@@ -1,71 +1,86 @@
-"""Utilities"""
+"""General utilities"""
 
 import json
 import os
-
 import torch
 
 
-class Config:
-    """Class that loads configuration parameters from json file
+def load_vocab_to_dict(filename):
+    """Load vocabulary file to python dictionary
+    Args:
+        filename (str): Path to the vocabulary file to load
     """
+    d = {}
+    with open(filename, "r") as file_reader:
+        for idx, token in enumerate(file_reader.read().splitlines()):
+            d[token] = idx
 
-    def __init__(self, filename):
-        """Instantiate the class
-        """
-        with open(filename, "r") as file_reader:
-            cfg = json.load(file_reader)
-            self.__dict__.update(cfg)
+    return d
 
-    def save(self, filename):
-        """Write configuration dictionary to json file
-        """
-        with open(filename, "w") as file_writer:
-            json.dump(self.__dict__, file_writer, indent=4)
 
-    def update(self, filename):
-        """Loads configuration from json file
-        """
-        with open(filename, "r") as file_reader:
-            cfg = json.load(file_reader)
-            self.__dict__.update(cfg)
+def read_dataset_file(filename):
+    """Read text file and return contents as a list
+    Args:
+        filename (str): Path to the dataset file to read
+    """
+    d = []
+    with open(filename, "r") as file_reader:
+        for line in file_reader.read().splitlines():
+            s = [word for word in line.split()]
+            d.append(s)
 
-    @property
-    def dict(self):
-        """Gives a dictionary like acceess to Config instance
-        """
-        return self.__dict__
+    return d
+
+
+def load_json_to_dict(filename):
+    """Load json file to python dictionary
+    Args:
+        filename (str): Path to the json file to load
+    """
+    with open(filename, "r") as file_reader:
+        d = json.load(file_reader)
+
+    return d
 
 
 def save_dict_to_json(d, filename):
     """Save python dictionary to json file
+    Args:
+        d (dict): Python dictionary to write to file
+        filename (str): Path to the json file to write the dictionary
     """
     with open(filename, "w") as file_writer:
+        d = {key: value for key, value in d.items()}
         json.dump(d, file_writer, indent=4)
 
 
 def save_checkpoint(checkpoint_dir, model, optimizer, epoch):
-    """Saves model and training parameters (state dict) as a checkpoint
+    """Save model checkpoint to disk
+    Args:
+        checkpoint_dir (str): Location where checkpoints will be written to disk
+        model (torch model object): Model
+        optimizer (torch optimizer object): Optimizer
+        epoch (int): Current model training epoch
     """
     checkpoint_state = {
         "model": model.state_dict(),
-        "optmizer": optimizer.state_dict(),
+        "optimizer": optimizer.state_dict(),
         "epoch": epoch,
     }
 
     checkpoint_path = os.path.join(checkpoint_dir, f"model_epoch{epoch:04d}.pth")
-
     torch.save(checkpoint_state, checkpoint_path)
 
 
-def load_checkpoint(checkpoint_path, model, optimizer):
-    """Loads model parameters (state dict) from checkpoint_path
+def load_checkpoint_to_evaluate_model(checkpoint_path, model, device):
+    """Load trained model from specified path (to test on held-out set)
+    Args:
+        checkpoint_path (str): Path to the model checkpoint to load
+        model (torch.nn.Module): Model
+        device (torch.device): Device on which to load the trained model
     """
-    print(f"Loading checkpoint: {checkpoint_path} from disk")
-
-    checkpoint = torch.load(checkpoint_path)
+    checkpoint = torch.load(checkpoint_path, map_location=device)
 
     model.load_state_dict(checkpoint["model"])
-    optimizer.load_state_dict(checkpoint["optimizer"])
 
-    return checkpoint["epoch"]
+    return model
