@@ -23,7 +23,6 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
         --output_dir <Output dir, where the transformed dataset will be written>
     ```
 ## BLSTM token classification model using task specific word embeddings trained from scratch
-### Train the model
 1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
 
     ```python
@@ -47,27 +46,34 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
     ```
   To experiment with different values for model parameters/training hyperparameters, this file will have to be modified.
 
-<!--
 3. Train the model
 
     ```python
-    python word_embedding_blstm_train.py \
-        --config_file <path to config.json> \
-        --data_dir <Directory containing the processed dataset> \
-        --expereiment_dir <Directory where training artifacts will be saved> \
-        --resume_checkpoint_path <If specified, load specified checkpoint and resume training>
+    python train_blstm.py \
+        --config_file <Path to file containing the model/training configuration to be loaded> \
+        --dataset_dir <Directory containing the processed dataset> \
+        --expereiment_dir <Directory where training artifacts will be saved>
     ```
 
 4. Evaluate the model on the heldout test set
 
     ```python
-    python word_embedding_blstm_evaluate.py \
-        --config_file <path to config.json> \
-        --vocab_dir <Directory containing the vocab files> \
-        --test_data_dir <Directory containing the heldout test set> \
-        --model_checkpoint <Trained model checkpoint to use for eval>
+    python eval_blstm.py \
+        --config_file <Path to file containing the model/training configuration to be loaded> \
+        --dataset_dir <Directory containing the processed dataset> \
+        --model_checkpoint <Path to the checkpoint containing the trained model to be used for eval>
     ```
--->
+
+5. Generate text with punctuations using the trained model
+
+    ```python
+    python generate_blstm.py \
+        --config_file <Path to file containing model configuration to be loaded> \
+        --in_text_file <Path to text file containing unpunctuated text> \
+        --vocab_dir <Directory containing vocab files used to train the model> \
+        --model_checkpoint <Path to the checkpoint containing the trained model to be used for generation> \
+        --out_text_file <Output file where punctuated text will be written>    
+    ```
 ## References
 1. [Phrase break prediction with bidirectional encoder representations in Japanese text-to-speech synthesis](https://arxiv.org/pdf/2104.12395.pdf)
 2. [An investigation of recurrent neural network architectures using word embeddings for phrase break prediction](https://www.isca-speech.org/archive_v0/Interspeech_2016/pdfs/0885.PDF)
