@@ -23,7 +23,7 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
         --output_dir <Output dir, where the transformed dataset will be written>
     ```
 ## BLSTM token classification model using task specific word embeddings trained from scratch
-1. Build vocabularies of words and tags from the processed dataset; for training word emebeddings from scratch
+1. Build vocabularies of words and punctuations from the processed dataset; for training word emebeddings from scratch
 
     ```python
     python utils/build_vocab_blstm.py \
