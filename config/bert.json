@@ -1,0 +1,6 @@
+{
+    "model": "bert-base-cased",
+    "batch_size": 64,
+    "lr": 1e-3,
+    "num_epochs": 10
+}
