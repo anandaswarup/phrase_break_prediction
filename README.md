@@ -74,6 +74,17 @@ The models are trained using the LibriTTS alignments available at [kan-bayashi/L
         --model_checkpoint <Path to the checkpoint containing the trained model to be used for generation> \
         --out_text_file <Output file where punctuated text will be written>    
     ```
+
+## Fine tuned BERT model with token classification head
+1. Build vocabularies of words and punctuations from the processed dataset; for training word emebeddings from scratch
+
+    ```python
+    python utils/build_vocab_blstm.py \
+        --dataset_dir <Directory containing the processed dataset>
+    ```
+
+    Running this script will save vocabulary files `dataset_dir/vocab/words.txt` and `dataset_dir/vocab/puncs.txt` containing all the words and punctuations in the dataset. It will also save `dataset_dir/vocab/params.json` with some extra information. However, only `dataset_dir/vocab/puncs.txt` will be used by the model.
+
 ## References
 1. [Phrase break prediction with bidirectional encoder representations in Japanese text-to-speech synthesis](https://arxiv.org/pdf/2104.12395.pdf)
 2. [An investigation of recurrent neural network architectures using word embeddings for phrase break prediction](https://www.isca-speech.org/archive_v0/Interspeech_2016/pdfs/0885.PDF)
