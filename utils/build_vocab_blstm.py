@@ -71,10 +71,10 @@ class VocabBuilder:
     def save_vocabulary(self):
         """Save the vocabulary to file"""
         print(f"Exporting {self.token} vocabulary to file")
-        if not os.path.exists(os.path.join(self.dataset_dir, "vocab/blstm")):
-            os.makedirs(os.path.join(self.dataset_dir, "vocab/blstm"))
+        if not os.path.exists(os.path.join(self.dataset_dir, "vocab")):
+            os.makedirs(os.path.join(self.dataset_dir, "vocab"))
 
-        self._write_to_file(os.path.join(self.dataset_dir, f"vocab/blstm/{self.token}.txt"), self.vocab)
+        self._write_to_file(os.path.join(self.dataset_dir, f"vocab/{self.token}.txt"), self.vocab)
 
 
 if __name__ == "__main__":
@@ -111,4 +111,4 @@ if __name__ == "__main__":
         "words_pad_token": words_vocab._pad,
         "words_unk_token": words_vocab._unk,
     }
-    save_dict_to_json(params, os.path.join(dataset_dir, "vocab/blstm/params.json"))
+    save_dict_to_json(params, os.path.join(dataset_dir, "vocab/params.json"))
