@@ -1,5 +1,5 @@
 {
-    "model": "bert-base-cased",
+    "bert_model_name": "bert-base-uncased",
     "batch_size": 64,
     "lr": 1e-3,
     "num_epochs": 10
