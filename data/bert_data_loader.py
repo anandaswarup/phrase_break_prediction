@@ -78,7 +78,9 @@ class BERTPhraseBreakDataset(Dataset):
         padded_sentences = pad_sequence(sentences, batch_first=True, padding_value=self.tokenizer.pad_token_id)
         padded_punctuations = pad_sequence(punctuations, batch_first=True, padding_value=-1)
 
-        attention_masks = [[float(word_idx > 0) for word_idx in sentence] for sentence in sentences]
+        attention_masks = [
+            [float(word_idx > 0) for word_idx in padded_sentence] for padded_sentence in padded_sentences
+        ]
         attention_masks = torch.FloatTensor(attention_masks)
 
         return padded_sentences, attention_masks, padded_punctuations
