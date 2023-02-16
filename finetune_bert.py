@@ -65,7 +65,7 @@ def _eval(model, device, loader):
     return f1_score(puncs_correct, puncs_predictions, average="micro")
 
 
-def train_and_evaluate_model(cfg, dataset_dir, experiment_dir):
+def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     """Train the model and periodically evaluate it on the dev set"""
     # Set all random seeds (for reproducibility)
     torch.manual_seed(1234)
