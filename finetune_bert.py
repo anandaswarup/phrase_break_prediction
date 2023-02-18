@@ -8,7 +8,7 @@ from sklearn.metrics import f1_score
 from data.bert_data_loader import BERTPhraseBreakDataset
 from model.bert import BERTPhraseBreakPredictor
 from utils.utils import save_checkpoint, load_json_to_dict, save_dict_to_json
-from transformers import BertTokenizer, BertModel
+import numpy as np
 
 
 def _write_log_to_file(log, filename):
@@ -20,45 +20,27 @@ def _write_log_to_file(log, filename):
     print(f"Written log file: {filename}")
 
 
-def _remove_predictions_for_padded_tokens(pred_puncs, puncs):
-    """Remove predictions corresponding to padded tokens"""
-    pred_puncs_without_padded = []
-    puncs_without_padded = []
-
-    for pred_punc, punc in zip(pred_puncs, puncs):
-        if punc > -1:
-            pred_puncs_without_padded.append(pred_punc)
-            puncs_without_padded.append(punc)
-
-    return pred_puncs_without_padded, puncs_without_padded
-
-
-def _eval(model, device, loader):
+def _eval(model, device, mask, dev_loader):
     """Evaluate the model"""
     model.eval()
     with torch.no_grad():
         puncs_predictions, puncs_correct = [], []
-        for texts, attn_masks, puncs in loader:
+        for texts, attn_masks, puncs in dev_loader:
             # Place the tensors on the appropriate device
             texts, attn_masks, puncs = texts.to(device), attn_masks.to(device), puncs.to(device)
 
             # Forward pass (predictions)
-            pred_probs = model(texts, attn_masks)
-            pred_probs = pred_probs.view(-1, pred_probs.shape[2]).contiguous()
+            logits = model(texts, attn_masks)
 
-            # Reshape ground truth
-            puncs = puncs.view(-1).contiguous()
+            # Get class prediction from logits
+            logits = logits.detach().cpu().numpy()
+            predictions = np.argmax(logits[mask.squeeze()], axis=1)
 
-            # Find the class predicted for each token by the model
-            _, pred_puncs = torch.max(pred_probs, 1)
+            puncs = torch.masked_select(puncs, (mask == 1))
+            puncs = puncs.detach().cpu().numpy()
 
-            # Remove predictions corresponding to padded tokens
-            pred_puncs = list(pred_puncs.cpu().numpy())
-            puncs = list(puncs.cpu().numpy())
-            pred_puncs, puncs = _remove_predictions_for_padded_tokens(pred_puncs, puncs)
-
-            puncs_predictions += pred_puncs
-            puncs_correct += puncs
+            puncs_predictions.extend(predictions)
+            puncs_correct.extend(puncs)
 
     model.train()
 
@@ -77,11 +59,8 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     os.makedirs(experiment_dir, exist_ok=True)
     os.makedirs(checkpoint_dir, exist_ok=True)
 
-    # Initialize the tokenizer for text
-    tokenizer = BertTokenizer.from_pretrained(cfg["bert_model_name"])
-
     # Instantiate the dataloaders for the train and dev splits
-    train_dataset = BERTPhraseBreakDataset(dataset_dir, tokenizer, split="train")
+    train_dataset = BERTPhraseBreakDataset(dataset_dir, split="train")
     train_loader = DataLoader(
         train_dataset,
         batch_size=cfg["batch_size"],
@@ -92,7 +71,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
         drop_last=True,
     )
 
-    dev_dataset = BERTPhraseBreakDataset(dataset_dir, tokenizer, split="dev")
+    dev_dataset = BERTPhraseBreakDataset(dataset_dir, split="dev")
     dev_loader = DataLoader(
         dev_dataset,
         batch_size=cfg["batch_size"],
@@ -107,15 +86,15 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Instantite the model
-    bert_model = BertModel.from_pretrained(cfg["bert_model_name"])
-    model = BERTPhraseBreakPredictor(bert_model, num_puncs=len(train_dataset.punc_vocab))
+    num_puncs = len(train_dataset.punc_vocab)
+    model = BERTPhraseBreakPredictor(cfg, num_puncs=num_puncs)
     model = model.to(device)
 
     # Instantiate the optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr"])
 
     # Specify the criterion to train the model
-    criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
+    criterion = torch.nn.CrossEntropyLoss()
 
     model.train()
 
@@ -132,35 +111,37 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
             optimizer.zero_grad()
 
             # Forward pass (predictions)
-            pred_probs = model(texts, attn_masks)
-            pred_probs = pred_probs.view(-1, pred_probs.shape[2]).contiguous()
-
-            # Reshape ground truth
-            puncs = puncs.view(-1).contiguous()
+            logits = model(texts, attn_masks)
 
             # Loss Computation
-            loss = criterion(pred_probs, puncs)
+            loss = criterion(logits.view(-1, num_puncs), puncs.view(-1))
 
             # Backward pass (Gradient computation and weight update)
             loss.backward()
             optimizer.step()
 
-            # Find the class predicted for each token by the model
-            _, pred_puncs = torch.max(pred_probs, 1)
+            # Mask out unwanted predictions on CLS/PAD/SEP tokens in texts
+            mask = (
+                (texts != train_dataset.tokenizer.cls_token_id)
+                & (texts != train_dataset.tokenizer.pad_token_id)
+                & (texts != train_dataset.tokenizer.sep_tok_id)
+            )
 
-            # Remove predictions corresponding to padded tokens
-            pred_puncs = list(pred_puncs.cpu().numpy())
-            puncs = list(puncs.cpu().numpy())
-            pred_puncs, puncs = _remove_predictions_for_padded_tokens(pred_puncs, puncs)
+            # Get class predictions from logits
+            logits = logits.detach().cpu().numpy()
+            predictions = np.argmax(logits[mask.squeeze()], axis=1)
 
-            puncs_predictions += pred_puncs
-            puncs_correct += puncs
+            puncs = torch.masked_select(puncs, (mask == 1))
+            puncs = puncs.detach().cpu().numpy()
+
+            puncs_predictions.extend(predictions)
+            puncs_correct.extend(puncs)
 
         train_F1_score = f1_score(puncs_correct, puncs_predictions, average="micro")
         train_F1_score = train_F1_score * 100
 
         # Eval step
-        dev_F1_score = _eval(model, device, dev_loader)
+        dev_F1_score = _eval(model, device, mask, dev_loader)
         dev_F1_score = dev_F1_score * 100
 
         # Check if the dev_F1_score is better than the best_dev_F1_score
