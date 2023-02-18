@@ -35,7 +35,7 @@ class BERTPhraseBreakPredictor(nn.Module):
         )
 
         sequence_output = outputs[0]
-        sequence_output = self.dropout(sequence_output)
+        sequence_output = self.dropout_layer(sequence_output)
 
         logits = self.output_layer(sequence_output)
 
