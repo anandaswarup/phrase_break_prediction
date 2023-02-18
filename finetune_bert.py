@@ -128,7 +128,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
             )
 
             # Get class predictions from logits
-            logits = logits.cpu().numpy()
+            logits = logits.cpu().detach().numpy()
             predictions = np.argmax(logits[mask.squeeze()], axis=1)
 
             puncs = torch.masked_select(puncs, (mask == 1))
