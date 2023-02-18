@@ -60,7 +60,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     # Instantiate the dataloaders for the train and dev splits
-    train_dataset = BERTPhraseBreakDataset(dataset_dir, split="train")
+    train_dataset = BERTPhraseBreakDataset(cfg, dataset_dir, split="train")
     train_loader = DataLoader(
         train_dataset,
         batch_size=cfg["batch_size"],
@@ -71,7 +71,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
         drop_last=True,
     )
 
-    dev_dataset = BERTPhraseBreakDataset(dataset_dir, split="dev")
+    dev_dataset = BERTPhraseBreakDataset(cfg, dataset_dir, split="dev")
     dev_loader = DataLoader(
         dev_dataset,
         batch_size=cfg["batch_size"],
