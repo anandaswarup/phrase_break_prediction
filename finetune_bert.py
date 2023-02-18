@@ -33,8 +33,9 @@ def _eval(model, device, mask, dev_loader):
             logits = model(texts, attn_masks)
 
             # Get class prediction from logits
-            logits = logits.cpu().numpy()
-            predictions = np.argmax(logits[mask.squeeze()], axis=1)
+            logits = torch.masked_select(logits, (mask == 1))
+            _, predictions = torch.max(logits, 1)
+            predictions = predictions.cpu().numpy()
 
             puncs = torch.masked_select(puncs, (mask == 1))
             puncs = puncs.cpu().numpy()
@@ -128,8 +129,9 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
             )
 
             # Get class predictions from logits
-            logits = logits.cpu().detach().numpy()
-            predictions = np.argmax(logits[mask.squeeze()], axis=1)
+            logits = torch.masked_select(logits, (mask == 1))
+            _, predictions = torch.max(logits, 1)
+            predictions = predictions.cpu().numpy()
 
             puncs = torch.masked_select(puncs, (mask == 1))
             puncs = puncs.cpu().numpy()
