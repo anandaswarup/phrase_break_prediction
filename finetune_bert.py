@@ -124,7 +124,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
             mask = (
                 (texts != train_dataset.tokenizer.cls_token_id)
                 & (texts != train_dataset.tokenizer.pad_token_id)
-                & (texts != train_dataset.tokenizer.sep_tok_id)
+                & (texts != train_dataset.tokenizer.sep_token_id)
             )
 
             # Get class predictions from logits
