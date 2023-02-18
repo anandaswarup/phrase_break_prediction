@@ -5,6 +5,7 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 from utils.utils import load_vocab_to_dict, read_dataset_file
+from transformers import BertTokenizer
 
 
 class BERTPhraseBreakDataset(Dataset):
@@ -13,7 +14,7 @@ class BERTPhraseBreakDataset(Dataset):
     (2) Returns sequences of IDs corresponding to texts, attention masks and punctuations
     """
 
-    def __init__(self, data_dir, tokenizer, split="train"):
+    def __init__(self, cfg, data_dir, split="train"):
         """Instantiate the dataset
         Args:
             data_dir (str): Directory containing the processed dataset
@@ -21,7 +22,7 @@ class BERTPhraseBreakDataset(Dataset):
             split (str): The dataset split to process ("train"/ "dev" / "test")
         """
         # The tokenizer to tokenize the sentences
-        self.tokenizer = tokenizer
+        self.tokenizer = BertTokenizer.from_pretrained(cfg["bert_model_name"])
 
         vocab_dir = os.path.join(data_dir, "vocab")
         assert os.path.isdir(vocab_dir), f"Vocab dir does not exist, run build_vocab_blstm.py"
