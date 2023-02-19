@@ -20,28 +20,44 @@ def _write_log_to_file(log, filename):
     print(f"Written log file: {filename}")
 
 
-def _eval(model, device, mask, dev_loader):
+def _remove_predictions_for_special_tokens(pred_puncs, puncs):
+    """Remove predictions corresponding to special (CLS/PAD/SEP) tokens"""
+    pred_puncs_without_padded = []
+    puncs_without_padded = []
+
+    for pred_punc, punc in zip(pred_puncs, puncs):
+        if punc > -1:
+            pred_puncs_without_padded.append(pred_punc)
+            puncs_without_padded.append(punc)
+
+    return pred_puncs_without_padded, puncs_without_padded
+
+
+def _eval(model, device, loader):
     """Evaluate the model"""
     model.eval()
     with torch.no_grad():
         puncs_predictions, puncs_correct = [], []
-        for texts, attn_masks, puncs in dev_loader:
-            # Place the tensors on the appropriate device
+        for texts, attn_masks, puncs in loader:
             texts, attn_masks, puncs = texts.to(device), attn_masks.to(device), puncs.to(device)
 
-            # Forward pass (predictions)
+            # Forward pass
             logits = model(texts, attn_masks)
+            logits = logits.view(-1, logits.shape[2]).contiguous()
 
-            # Get class prediction from logits
-            _, predictions = torch.max(logits, 1)
-            predictions = torch.masked_select(predictions, (mask == 1))
-            predictions = predictions.cpu().numpy()
+            # Reshape the ground truth
+            puncs = puncs.view(-1)
 
-            puncs = torch.masked_select(puncs, (mask == 1))
-            puncs = puncs.cpu().numpy()
+            # Find the class predicted for each token by the model
+            _, predicted_puncs = torch.max(logits, 1)
 
-            puncs_predictions.extend(predictions)
-            puncs_correct.extend(puncs)
+            # Remove the predictions corresponding to special tokens in the text
+            predicted_puncs = list(predicted_puncs.cpu().numpy())
+            puncs = list(puncs.cpu().numpy())
+            predicted_puncs, puncs = _remove_predictions_for_special_tokens(predicted_puncs, puncs)
+
+            puncs_predictions += predicted_puncs
+            puncs_correct += puncs
 
     model.train()
 
@@ -95,7 +111,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr"])
 
     # Specify the criterion to train the model
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
 
     model.train()
 
@@ -113,37 +129,34 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
 
             # Forward pass (predictions)
             logits = model(texts, attn_masks)
+            logits = logits.view(-1, logits.shape[2]).contiguous()
+
+            # Reshape the ground truth
+            puncs = puncs.view(-1)
 
             # Loss Computation
-            loss = criterion(logits.view(-1, num_puncs), puncs.view(-1))
+            loss = criterion(logits, puncs)
 
             # Backward pass (Gradient computation and weight update)
             loss.backward()
             optimizer.step()
 
-            # Mask out unwanted predictions on CLS/PAD/SEP tokens in texts
-            mask = (
-                (texts != train_dataset.tokenizer.cls_token_id)
-                & (texts != train_dataset.tokenizer.pad_token_id)
-                & (texts != train_dataset.tokenizer.sep_token_id)
-            )
+            # Find the class predicted for each token by the model
+            _, predicted_puncs = torch.max(logits, 1)
 
-            # Get class predictions from logits
-            _, predictions = torch.max(logits, 1)
-            predictions = torch.masked_select(predictions, (mask == 1))
-            predictions = predictions.cpu().numpy()
+            # Remove the predictions corresponding to special tokens in the text
+            predicted_puncs = list(predicted_puncs.cpu().numpy())
+            puncs = list(puncs.cpu().numpy())
+            predicted_puncs, puncs = _remove_predictions_for_special_tokens(predicted_puncs, puncs)
 
-            puncs = torch.masked_select(puncs, (mask == 1))
-            puncs = puncs.cpu().numpy()
-
-            puncs_predictions.extend(predictions)
-            puncs_correct.extend(puncs)
+            puncs_predictions += predicted_puncs
+            puncs_correct += puncs
 
         train_F1_score = f1_score(puncs_correct, puncs_predictions, average="micro")
         train_F1_score = train_F1_score * 100
 
         # Eval step
-        dev_F1_score = _eval(model, device, mask, dev_loader)
+        dev_F1_score = _eval(model, device, dev_loader)
         dev_F1_score = dev_F1_score * 100
 
         # Check if the dev_F1_score is better than the best_dev_F1_score
