@@ -26,7 +26,7 @@ def _remove_predictions_for_special_tokens(pred_puncs, puncs):
     puncs_without_padded = []
 
     for pred_punc, punc in zip(pred_puncs, puncs):
-        if punc > -1:
+        if punc != -100:
             pred_puncs_without_padded.append(pred_punc)
             puncs_without_padded.append(punc)
 
@@ -42,7 +42,7 @@ def _eval(model, device, loader):
             texts, attn_masks, puncs = texts.to(device), attn_masks.to(device), puncs.to(device)
 
             # Forward pass
-            logits = model(texts, attn_masks)
+            _, logits = model(texts, attn_masks)
             logits = logits.view(-1, logits.shape[2]).contiguous()
 
             # Reshape the ground truth
@@ -110,9 +110,6 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     # Instantiate the optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr"])
 
-    # Specify the criterion to train the model
-    criterion = torch.nn.CrossEntropyLoss(ignore_index=-1)
-
     model.train()
 
     best_dev_F1_score = 0.0
@@ -128,14 +125,11 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
             optimizer.zero_grad()
 
             # Forward pass (predictions)
-            logits = model(texts, attn_masks)
+            loss, logits = model(texts, attn_masks)
             logits = logits.view(-1, logits.shape[2]).contiguous()
 
             # Reshape the ground truth
             puncs = puncs.view(-1)
-
-            # Loss Computation
-            loss = criterion(logits, puncs)
 
             # Backward pass (Gradient computation and weight update)
             loss.backward()
