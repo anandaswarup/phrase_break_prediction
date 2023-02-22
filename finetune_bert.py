@@ -42,7 +42,7 @@ def _eval(model, device, loader):
             texts, attn_masks, puncs = texts.to(device), attn_masks.to(device), puncs.to(device)
 
             # Forward pass
-            _, logits = model(texts, attn_masks)
+            _, logits = model(texts, attn_masks, puncs)
             logits = logits.view(-1, logits.shape[2]).contiguous()
 
             # Reshape the ground truth
@@ -125,7 +125,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
             optimizer.zero_grad()
 
             # Forward pass (predictions)
-            loss, logits = model(texts, attn_masks)
+            loss, logits = model(texts, attn_masks, puncs)
             logits = logits.view(-1, logits.shape[2]).contiguous()
 
             # Reshape the ground truth
