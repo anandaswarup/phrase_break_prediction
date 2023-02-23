@@ -68,7 +68,6 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
         train_dataset,
         batch_size=cfg["batch_size"],
         shuffle=True,
-        num_workers=8,
         pin_memory=True,
         drop_last=True,
     )
@@ -78,7 +77,6 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
         dev_dataset,
         batch_size=cfg["batch_size"],
         shuffle=False,
-        num_workers=1,
         pin_memory=False,
         drop_last=False,
     )
