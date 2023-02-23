@@ -1,22 +1,22 @@
-"""Model definition for fine tuned BERT model with a token classification head"""
+"""Model definition for BERT model with a token classification head"""
 
 import torch.nn as nn
-from transformers import BertForTokenClassification
+from transformers import AutoModelForTokenClassification
 
 
 class BERTPhraseBreakPredictor(nn.Module):
-    """Model definition for fine tuned BERT model with token classification head"""
+    """BERT model with a token classification head"""
 
-    def __init__(self, cfg, num_puncs):
+    def __init__(self, model_name, num_puncs):
         """Instantiate the model"""
         super().__init__()
 
-        self.num_puncs = num_puncs
-        self.bert_model = BertForTokenClassification.from_pretrained(cfg["bert_model_name"], num_labels=num_puncs)
+        self.model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels=num_puncs)
 
-    def forward(self, texts, attention_mask, labels):
+    def forward(self, texts, attention_masks, punctuations):
         """Forward pass"""
-        outputs = self.bert_model(texts, attention_mask=attention_mask, labels=labels)
+        outputs = self.model(input_ids=texts, attention_mask=attention_masks, labels=punctuations)
+
         loss, logits = outputs[0], outputs[1]
 
         return loss, logits
