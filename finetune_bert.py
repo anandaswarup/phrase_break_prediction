@@ -1,4 +1,4 @@
-"""Finetune BERT model with a token classification head for phrase break prediction and evaluate the performance"""
+"""Finetune BERT model with a token classification head for phrase break prediction"""
 
 import argparse
 import os
@@ -8,7 +8,6 @@ from sklearn.metrics import f1_score
 from data.bert_data_loader import BERTPhraseBreakDataset
 from model.bert import BERTPhraseBreakPredictor
 from utils.utils import save_checkpoint, load_json_to_dict, save_dict_to_json
-import numpy as np
 
 
 def _write_log_to_file(log, filename):
@@ -20,44 +19,31 @@ def _write_log_to_file(log, filename):
     print(f"Written log file: {filename}")
 
 
-def _remove_predictions_for_special_tokens(pred_puncs, puncs):
-    """Remove predictions corresponding to special (CLS/PAD/SEP) tokens"""
-    pred_puncs_without_padded = []
-    puncs_without_padded = []
-
-    for pred_punc, punc in zip(pred_puncs, puncs):
-        if punc != -100:
-            pred_puncs_without_padded.append(pred_punc)
-            puncs_without_padded.append(punc)
-
-    return pred_puncs_without_padded, puncs_without_padded
-
-
-def _eval(model, device, loader):
+def _eval(model, device, loader, num_puncs):
     """Evaluate the model"""
     model.eval()
     with torch.no_grad():
         puncs_predictions, puncs_correct = [], []
-        for texts, attn_masks, puncs in loader:
-            texts, attn_masks, puncs = texts.to(device), attn_masks.to(device), puncs.to(device)
+        for batch in loader:
+            texts = batch["input_ids"].to(device)
+            attention_masks = batch["attention_mask"].to(device)
+            punctuations = batch["labels"].to(device)
 
             # Forward pass
-            _, logits = model(texts, attn_masks, puncs)
-            logits = logits.view(-1, logits.shape[2]).contiguous()
+            _, logits = model(texts=texts, attention_masks=attention_masks, punctuations=punctuations)
 
-            # Reshape the ground truth
-            puncs = puncs.view(-1)
+            # Flatten punctuations and logits
+            punctuations = punctuations.view(-1)
+            logits = logits.view(-1, num_puncs)
+            predicted_punctuations = torch.argmax(logits, axis=1)
 
-            # Find the class predicted for each token by the model
-            _, predicted_puncs = torch.max(logits, 1)
+            # Ignore predictions made for labels with value -100 (padding tokens)
+            mask = punctuations != 100
+            punctuations = torch.masked_select(punctuations, mask)
+            predicted_punctuations = torch.masked_select(predicted_punctuations, mask)
 
-            # Remove the predictions corresponding to special tokens in the text
-            predicted_puncs = list(predicted_puncs.cpu().numpy())
-            puncs = list(puncs.cpu().numpy())
-            predicted_puncs, puncs = _remove_predictions_for_special_tokens(predicted_puncs, puncs)
-
-            puncs_predictions += predicted_puncs
-            puncs_correct += puncs
+            puncs_predictions.extend(list(predicted_punctuations.cpu().numpy()))
+            puncs_correct.extend(list(punctuations.cpu().numpy()))
 
     model.train()
 
@@ -77,24 +63,22 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     os.makedirs(checkpoint_dir, exist_ok=True)
 
     # Instantiate the dataloaders for the train and dev splits
-    train_dataset = BERTPhraseBreakDataset(cfg, dataset_dir, split="train")
+    train_dataset = BERTPhraseBreakDataset(cfg["bert_model_name"], dataset_dir, split="train")
     train_loader = DataLoader(
         train_dataset,
         batch_size=cfg["batch_size"],
         shuffle=True,
         num_workers=8,
-        collate_fn=train_dataset.pad_collate,
         pin_memory=True,
         drop_last=True,
     )
 
-    dev_dataset = BERTPhraseBreakDataset(cfg, dataset_dir, split="dev")
+    dev_dataset = BERTPhraseBreakDataset(cfg["bert_model_name"], dataset_dir, split="dev")
     dev_loader = DataLoader(
         dev_dataset,
         batch_size=cfg["batch_size"],
         shuffle=False,
         num_workers=1,
-        collate_fn=dev_dataset.pad_collate,
         pin_memory=False,
         drop_last=False,
     )
@@ -104,7 +88,7 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
 
     # Instantite the model
     num_puncs = len(train_dataset.punc_vocab)
-    model = BERTPhraseBreakPredictor(cfg, num_puncs=num_puncs)
+    model = BERTPhraseBreakPredictor(cfg["bert_model_name"], num_puncs=num_puncs)
     model = model.to(device)
 
     # Instantiate the optimizer
@@ -117,40 +101,39 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     for epoch in range(0, cfg["num_epochs"]):
         # Train step
         puncs_predictions, puncs_correct = [], []
-        for texts, attn_masks, puncs in train_loader:
-            # Place the tensors on the appropriate device
-            texts, attn_masks, puncs = texts.to(device), attn_masks.to(device), puncs.to(device)
+        for batch in train_loader:
+            texts = batch["input_ids"].to(device)
+            attention_masks = batch["attention_mask"].to(device)
+            punctuations = batch["labels"].to(device)
 
             # Clear all previous gradients
             optimizer.zero_grad()
 
-            # Forward pass (predictions)
-            loss, logits = model(texts, attn_masks, puncs)
-            logits = logits.view(-1, logits.shape[2]).contiguous()
-
-            # Reshape the ground truth
-            puncs = puncs.view(-1)
+            # Forward pass
+            loss, logits = model(texts=texts, attention_masks=attention_masks, punctuations=punctuations)
 
             # Backward pass (Gradient computation and weight update)
             loss.backward()
             optimizer.step()
 
-            # Find the class predicted for each token by the model
-            _, predicted_puncs = torch.max(logits, 1)
+            # Flatten punctuations and logits
+            punctuations = punctuations.view(-1)
+            logits = logits.view(-1, num_puncs)
+            predicted_punctuations = torch.argmax(logits, axis=1)
 
-            # Remove the predictions corresponding to special tokens in the text
-            predicted_puncs = list(predicted_puncs.cpu().numpy())
-            puncs = list(puncs.cpu().numpy())
-            predicted_puncs, puncs = _remove_predictions_for_special_tokens(predicted_puncs, puncs)
+            # Ignore predictions made for labels with value -100 (padding tokens)
+            mask = punctuations != 100
+            punctuations = torch.masked_select(punctuations, mask)
+            predicted_punctuations = torch.masked_select(predicted_punctuations, mask)
 
-            puncs_predictions += predicted_puncs
-            puncs_correct += puncs
+            puncs_predictions.extend(list(predicted_punctuations.cpu().numpy()))
+            puncs_correct.extend(list(punctuations.cpu().numpy()))
 
         train_F1_score = f1_score(puncs_correct, puncs_predictions, average="micro")
         train_F1_score = train_F1_score * 100
 
         # Eval step
-        dev_F1_score = _eval(model, device, dev_loader)
+        dev_F1_score = _eval(model, device, dev_loader, num_puncs)
         dev_F1_score = dev_F1_score * 100
 
         # Check if the dev_F1_score is better than the best_dev_F1_score
