@@ -1,10 +1,10 @@
-"""Data loader for fine tuned BERT model with a token classification head"""
+"""Data loader for fine tuning BERT model with a token classification head on phrase break prediction"""
 
 import os
 import torch
 from torch.utils.data import Dataset
 from utils.utils import load_vocab_to_dict, read_dataset_file
-from transformers import AutoTokenizer
+from transformers import BertTokenizerFast
 import numpy as np
 
 
@@ -28,34 +28,22 @@ class BERTPhraseBreakDataset(Dataset):
         assert len(self.sentences) == len(self.punctuations)
 
         # Instantiate the tokenizer to tokenize the sentences
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
-
-        # Tokenize and encode the sentences
-        self.sentence_encodings = self.tokenizer(
-            self.sentences, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True
-        )
-
-        # Encode the punctuations and align them with word-pieces
-        self.punctuation_encodings = self._align_and_encode_punctuations(self.punctuations)
-
-        # Remove offset mapping from sentence encodings
-        self.sentence_encodings.pop("offset_mapping")
+        self.tokenizer = BertTokenizerFast.from_pretrained(model_name)
 
     def __len__(self):
-        return len(self.punctuation_encodings)
+        return len(self.sentences)
 
     def __getitem__(self, idx):
-        item = {key: torch.tensor(val[idx]) for key, val in self.sentence_encodings.items()}
-        item["labels"] = torch.tensor(self.punctuation_encodings[idx])
+        sentence, puncs = self.sentences[idx], self.punctuations[idx]
 
-        return item
+        return sentence, puncs
 
-    def _align_and_encode_punctuations(self, punctuations):
+    def _align_and_encode_punctuations(self, sentence_encodings, punctuations):
         """Aligns the punctuations with word-pieces and encodes them"""
         encoded_punctuations = [[self.punc_vocab[punc] for punc in sequence] for sequence in punctuations]
 
         aligned_punctuations = []
-        for punc_encodings, offset in zip(encoded_punctuations, self.sentence_encodings.offset_mapping):
+        for punc_encodings, offset in zip(encoded_punctuations, sentence_encodings.offset_mapping):
             # Create an empty array of -100
             aligned_puncs = np.ones(len(offset), dtype=int) * -100
             array_offset = np.array(offset)
@@ -65,3 +53,20 @@ class BERTPhraseBreakDataset(Dataset):
             aligned_punctuations.append(aligned_puncs.tolist())
 
         return aligned_punctuations
+
+    def pad_collate(self, batch):
+        """Create batches padded to length of the longest sequence in the batch"""
+        sentences, punctuations = zip(*batch)
+
+        # Tokenize and encode the sentences
+        sentence_encodings = self.tokenizer(
+            sentences, is_split_into_words=True, return_offsets_mapping=True, padding=True, truncation=True
+        )
+
+        # Encode the punctuations and align them with word-pieces
+        punctuation_encodings = self._align_and_encode_punctuations(sentence_encodings, punctuations)
+
+        item = {key: torch.tensor(val) for key, val in sentence_encodings.items()}
+        item["labels"] = torch.tensor(punctuation_encodings)
+
+        return item
