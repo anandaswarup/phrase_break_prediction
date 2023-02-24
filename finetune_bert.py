@@ -8,6 +8,7 @@ from sklearn.metrics import f1_score
 from data.bert_data_loader import BERTPhraseBreakDataset
 from model.bert import BERTPhraseBreakPredictor
 from utils.utils import save_checkpoint, load_json_to_dict, save_dict_to_json
+from transformers import AdamW
 
 
 def _write_log_to_file(log, filename):
@@ -90,7 +91,8 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
     model = model.to(device)
 
     # Instantiate the optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr"])
+    # optimizer = torch.optim.Adam(model.parameters(), lr=cfg["lr"])
+    optimizer = AdamW(model.parameters(), lr=cfg["lr"])
 
     model.train()
 
