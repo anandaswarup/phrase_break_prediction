@@ -2,5 +2,6 @@
     "bert_model_name": "bert-base-uncased",
     "batch_size": 64,
     "lr": 1e-5,
+    "max_grad_norm": 10,
     "num_epochs": 10
 }
