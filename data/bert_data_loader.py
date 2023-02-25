@@ -66,7 +66,7 @@ class BERTPhraseBreakDataset(Dataset):
         # Encode the punctuations and align them with word-pieces
         punctuation_encodings = self._align_and_encode_punctuations(sentence_encodings, punctuations)
 
-        item = {key: torch.tensor(val) for key, val in sentence_encodings.items()}
-        item["labels"] = torch.tensor(punctuation_encodings)
+        item = {key: torch.LongTensor(val) for key, val in sentence_encodings.items()}
+        item["labels"] = torch.LongTensor(punctuation_encodings)
 
         return item
