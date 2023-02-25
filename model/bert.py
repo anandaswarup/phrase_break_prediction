@@ -1,7 +1,7 @@
 """Model definition for BERT model with a token classification head"""
 
 import torch.nn as nn
-from transformers import AutoModelForTokenClassification
+from transformers import BertModel
 
 
 class BERTPhraseBreakPredictor(nn.Module):
@@ -11,12 +11,26 @@ class BERTPhraseBreakPredictor(nn.Module):
         """Instantiate the model"""
         super().__init__()
 
-        self.model = AutoModelForTokenClassification.from_pretrained(model_name, num_labels=num_puncs)
+        # BERT Encoder
+        self.bert_layer = BertModel.from_pretrained(model_name)
 
-    def forward(self, texts, attention_masks, punctuations):
+        # Dropout
+        self.dropout_layer = nn.Dropout(0.1)
+
+        # Output layer
+        bert_hidden_size = self.bert_layer.config.hidden_size
+        self.output_layer = nn.Linear(in_features=bert_hidden_size, out_features=num_puncs)
+
+    def forward(self, text_ids, attention_masks):
         """Forward pass"""
-        outputs = self.model(input_ids=texts, attention_mask=attention_masks, labels=punctuations)
+        # BERT encoder
+        bert_outputs = self.bert_layer(input_ids=text_ids, attention_mask=attention_masks)
 
-        loss, logits = outputs[0], outputs[1]
+        # Last hidden state output
+        last_hidden_state = bert_outputs[0]
+        last_hidden_state = self.dropout_layer(last_hidden_state)
 
-        return loss, logits
+        # Output logits
+        logits = self.output_layer(last_hidden_state)
+
+        return logits
