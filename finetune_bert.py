@@ -176,12 +176,12 @@ def finetune_and_evaluate_model(cfg, dataset_dir, experiment_dir):
 
         # Log training for one epoch
         epoch_log_string = f"Epoch: {epoch + 1}, Train Set F1: {train_F1_score:.2f}, Dev Set F1: {dev_F1_score:.2f}"
-        print(epoch_log_string)
+        print(epoch_log_string, flush=True)
         training_log.append(epoch_log_string)
 
     # Training summary
     summary_log_string = f"Best performing model - Epoch: {best_epoch}, F1 Score on Dev Set: {best_dev_F1_score:.2f}"
-    print(summary_log_string)
+    print(summary_log_string, flush=True)
     training_log.append(summary_log_string)
 
     return training_log
