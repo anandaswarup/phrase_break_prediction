@@ -42,7 +42,7 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Instantiate the model
-    model = BERTPhraseBreakPredictor(model_name=cfg["model_name"], num_puncs=len(punc_vocab))
+    model = BERTPhraseBreakPredictor(model_name=cfg["bert_model_name"], num_puncs=len(punc_vocab))
     model = model.to(device)
 
     # Load the fine tuned model from the checkpoint
