@@ -110,6 +110,7 @@ table {
     -webkit-overflow-scrolling: touch;
     border-collapse: collapse;
     border-spacing: 0;
+    text-align: center;
 }
 
 th {
