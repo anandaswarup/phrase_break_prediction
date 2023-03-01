@@ -14,9 +14,8 @@
             <a href="https://github.com/anandaswarup/phrase_break_prediction">anandaswarup/phrase_break_prediction</a>
             which contains code to train speaker independent phrasing models for English Text-to-Speech systems. In
             text, phrase breaks are usually represented by punctuation. Typically, Text-to-Speech systems insert phrase
-            breaks in the synthesized speech whenever they encounter a comma in the text to be synthesized.
-
-            Currently the codebase supports two models
+            breaks in the synthesized speech whenever they encounter a comma in the text to be synthesized. Currently
+            the codebase supports two models
         <ol>
             <li>
                 BLSTM token classification model using task specific word embeddings trained from scratch
@@ -30,7 +29,7 @@
         alignments provided at <a href="https://github.com/kan-bayashi/LibriTTSLabel">kan-bayashi/LibriTTSLabel</a>. The
         train-clean-360 split is used for training, while the dev-clean and test-clean splits are used for validation
         and test respectively.
-
+        <br>
         The samples presented in this page are synthesized from text using the End-to-End TTS system based on the
         Tacotron2 model with modifications as described below
         <ol>
@@ -48,14 +47,21 @@
         </ol>
         The End-to-End TTS system has been trained on the <a href="https://keithito.com/LJ-Speech-Dataset/">LJSpeech
             dataset</a>. Code for training the TTS system can be found at <a
-            href="https://github.com/anandaswarup/TTS">anandaswarup/TTS</a>.
-
-        In all samples presented below, no phrasing refers to unpunctuated text synthesized by the TTS system described
-        above, while blstm and bert refers to text punctuated using the blstm and bert models respectively and then
-        synthesized by the TTS system.
+            href="https://github.com/anandaswarup/TTS">anandaswarup/TTS</a>. In all samples presented below, no
+        punctuation refers to unpunctuated text synthesized by the TTS system described above, while blstm and bert
+        refers to text punctuated using the blstm and bert models respectively and then synthesized by the TTS system.
         </p>
     </header>
 
+    <body>
+        <table>
+            <thread>
+                <th>no punctuation</th>
+                <th>blstm</th>
+                <th>bert</th>
+            </thread>
+        </table>
+    </body>
 </body>
 
 </html>
