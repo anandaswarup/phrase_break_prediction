@@ -13,7 +13,13 @@ body {
 
 
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    text-align: center;
     margin-top: 2rem;
     margin-bottom: 1rem;
     font-weight: normal;
@@ -60,7 +66,8 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 
-header, main {
+header,
+main {
     word-wrap: break-word;
     max-width: 78rem;
 }
@@ -82,8 +89,8 @@ hr {
 }
 
 a {
-  color: #1e6bb8;
-  text-decoration: none;
+    color: #1e6bb8;
+    text-decoration: none;
 }
 
 a:hover {
@@ -109,7 +116,8 @@ th {
     font-weight: bold;
 }
 
-th, td {
+th,
+td {
     padding: 0.5rem 1rem;
     border: 1px solid #e9ebec;
 }
