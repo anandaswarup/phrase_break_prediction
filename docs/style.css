@@ -103,7 +103,8 @@ ul {
 
 table {
     display: block;
-    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
     overflow: auto;
     word-break: normal;
     word-break: keep-all;
