@@ -103,8 +103,7 @@ ul {
 
 table {
     display: block;
-    margin-left: auto;
-    margin-right: auto;
+    width: 100%;
     overflow: auto;
     word-break: normal;
     word-break: keep-all;
@@ -112,11 +111,6 @@ table {
     border-collapse: collapse;
     border-spacing: 0;
     text-align: center;
-}
-
-table.center {
-    margin-left: auto;
-    margin-right: auto;
 }
 
 th {
