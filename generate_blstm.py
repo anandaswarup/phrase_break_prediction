@@ -2,9 +2,15 @@
 
 import argparse
 import os
+
 import torch
+
 from model.blstm import PhraseBreakPredictor
-from utils.utils import load_checkpoint_to_evaluate_model, load_json_to_dict, load_vocab_to_dict
+from utils.utils import (
+    load_checkpoint_to_evaluate_model,
+    load_json_to_dict,
+    load_vocab_to_dict,
+)
 
 
 def load_text_instances(synthesis_file):
@@ -21,7 +27,9 @@ def load_text_instances(synthesis_file):
 def load_vocabs(vocab_dir):
     """Load the vocab files for the BLSTM token classification model"""
 
-    assert os.path.isdir(vocab_dir), f"Vocab dir does not exist, run build_vocab_blstm.py"
+    assert os.path.isdir(
+        vocab_dir
+    ), "Vocab dir does not exist, run build_vocab_blstm.py"
 
     # Load vocabularies for both words and punctuations
     word_vocab = load_vocab_to_dict(os.path.join(vocab_dir, "words.txt"))
@@ -67,7 +75,11 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
                 print(f"Processing {fileid}")
 
                 # Split the paragraph into constituent sentences
-                unpunc_paragraph = [sentence.strip() for sentence in unpunc_paragraph.split(".") if sentence != ""]
+                unpunc_paragraph = [
+                    sentence.strip()
+                    for sentence in unpunc_paragraph.split(".")
+                    if sentence != ""
+                ]
 
                 punc_paragraph = []
 
@@ -77,7 +89,11 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
                     unpunc_text = [word for word in unpunc_text.split()]
                     unpunc_text_seq = torch.LongTensor(
                         [
-                            word_vocab[word] if word in word_vocab else word_vocab[vocab_params["words_unk_token"]]
+                            (
+                                word_vocab[word]
+                                if word in word_vocab
+                                else word_vocab[vocab_params["words_unk_token"]]
+                            )
                             for word in unpunc_text
                         ]
                     ).unsqueeze(0)
@@ -85,14 +101,20 @@ def generate_punctuations(cfg, in_file, vocab_dir, model_checkpoint, out_file):
 
                     # Predict sequence of punctuation probabilities using the trained model
                     pred_probs_seq = model(unpunc_text_seq)
-                    pred_probs_seq = pred_probs_seq.view(-1, pred_probs_seq.shape[2]).contiguous()
+                    pred_probs_seq = pred_probs_seq.view(
+                        -1, pred_probs_seq.shape[2]
+                    ).contiguous()
 
                     # Find punctuation predicted for each word by the model
                     _, pred_puncs_seq = torch.max(pred_probs_seq, 1)
                     pred_puncs = list(pred_puncs_seq.cpu().numpy())
                     pred_puncs = [inv_punc_vocab[cid] for cid in pred_puncs]
 
-                    punc_text = [token for word_punc_pair in zip(unpunc_text, pred_puncs) for token in word_punc_pair]
+                    punc_text = [
+                        token
+                        for word_punc_pair in zip(unpunc_text, pred_puncs)
+                        for token in word_punc_pair
+                    ]
                     punc_text = " ".join(punc_text)
 
                     punc_text = punc_text.replace(" _NONE_ ", " ")
@@ -114,22 +136,46 @@ if __name__ == "__main__":
         description="Generate text with punctuations using trained BLSTM token classification model"
     )
 
-    parser.add_argument("--config_file", help="Path to file containing model configuration to be loaded", required=True)
-    parser.add_argument("--in_text_file", help="Path to text file containing unpunctuated text", required=True)
-    parser.add_argument("--vocab_dir", help="Directory containing vocab files used to train the model", required=True)
+    parser.add_argument(
+        "--config_file",
+        help="Path to file containing model configuration to be loaded",
+        required=True,
+    )
+    parser.add_argument(
+        "--in_text_file",
+        help="Path to text file containing unpunctuated text",
+        required=True,
+    )
+    parser.add_argument(
+        "--vocab_dir",
+        help="Directory containing vocab files used to train the model",
+        required=True,
+    )
     parser.add_argument(
         "--model_checkpoint",
         help="Path to the checkpoint containing the trained model to be used for generation",
         required=True,
     )
-    parser.add_argument("--out_text_file", help="Output file where punctuated text will be written", required=True)
+    parser.add_argument(
+        "--out_text_file",
+        help="Output file where punctuated text will be written",
+        required=True,
+    )
 
     # Parse and get command line arguments
     args = parser.parse_args()
 
     # Load configuration from file
-    assert os.path.isfile(args.config_file), f"No config file found at {args.config_file}"
+    assert os.path.isfile(
+        args.config_file
+    ), f"No config file found at {args.config_file}"
     cfg = load_json_to_dict(args.config_file)
 
     # Generate text with punctuations using the trained model
-    generate_punctuations(cfg, args.in_text_file, args.vocab_dir, args.model_checkpoint, args.out_text_file)
+    generate_punctuations(
+        cfg,
+        args.in_text_file,
+        args.vocab_dir,
+        args.model_checkpoint,
+        args.out_text_file,
+    )
