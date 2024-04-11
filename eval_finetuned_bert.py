@@ -1,9 +1,12 @@
 """Evaluate the fine tuned BERT model with a token classification head"""
+
 import argparse
 import os
+
 import torch
-from torch.utils.data import DataLoader
 from sklearn.metrics import f1_score
+from torch.utils.data import DataLoader
+
 from data.bert_data_loader import BERTPhraseBreakDataset
 from model.bert import BERTPhraseBreakPredictor
 from utils.utils import load_checkpoint_to_evaluate_model, load_json_to_dict
@@ -24,9 +27,16 @@ def _remove_predictions_for_padded_tokens(pred_puncs, puncs):
 
 def evaluate_finetuned_model(cfg, dataset_dir, model_checkpoint):
     """Evaluate the fine tuned BERT model"""
-    dataset = BERTPhraseBreakDataset(model_name=cfg["bert_model_name"], data_dir=dataset_dir, split="test")
+    dataset = BERTPhraseBreakDataset(
+        model_name=cfg["bert_model_name"], data_dir=dataset_dir, split="test"
+    )
     loader = DataLoader(
-        dataset=dataset, batch_size=4, shuffle=False, collate_fn=dataset.pad_collate, pin_memory=False, drop_last=False
+        dataset=dataset,
+        batch_size=4,
+        shuffle=False,
+        collate_fn=dataset.pad_collate,
+        pin_memory=False,
+        drop_last=False,
     )
 
     # Specify the device to be used for the eval
@@ -34,11 +44,15 @@ def evaluate_finetuned_model(cfg, dataset_dir, model_checkpoint):
 
     # Instantiate the model
     num_puncs = len(dataset.punc_vocab)
-    model = BERTPhraseBreakPredictor(model_name=cfg["bert_model_name"], num_puncs=num_puncs)
+    model = BERTPhraseBreakPredictor(
+        model_name=cfg["bert_model_name"], num_puncs=num_puncs
+    )
     model = model.to(device)
 
     # Load the fine tuned model from the checkpoint
-    model = load_checkpoint_to_evaluate_model(checkpoint_path=model_checkpoint, model=model, device=device)
+    model = load_checkpoint_to_evaluate_model(
+        checkpoint_path=model_checkpoint, model=model, device=device
+    )
 
     model.eval()
 
@@ -64,7 +78,9 @@ def evaluate_finetuned_model(cfg, dataset_dir, model_checkpoint):
             # Remove predictions corresponding to paddings
             pred_punc_ids = list(pred_punc_ids.cpu().numpy())
             punc_ids = list(punc_ids.cpu().numpy())
-            pred_punc_ids, punc_ids = _remove_predictions_for_padded_tokens(pred_punc_ids, punc_ids)
+            pred_punc_ids, punc_ids = _remove_predictions_for_padded_tokens(
+                pred_punc_ids, punc_ids
+            )
 
             predictions += pred_punc_ids
             ground_truth += punc_ids
@@ -82,9 +98,15 @@ if __name__ == "__main__":
 
     # Command line arguments
     parser.add_argument(
-        "--config_file", help="Path to file containing the fine tuning configuration to be loaded", required=True
+        "--config_file",
+        help="Path to file containing the fine tuning configuration to be loaded",
+        required=True,
     )
-    parser.add_argument("--dataset_dir", help="Directory containing the processed dataset", required=True)
+    parser.add_argument(
+        "--dataset_dir",
+        help="Directory containing the processed dataset",
+        required=True,
+    )
     parser.add_argument(
         "--model_checkpoint",
         help="Path to the checkpoint containing the task specific fine tuned model to be used for eval",
@@ -99,11 +121,13 @@ if __name__ == "__main__":
     model_checkpoint = args.model_checkpoint
 
     # Load configuration from file
-    assert os.path.isfile(args.config_file), f"No config file found at {args.config_file}"
+    assert os.path.isfile(
+        args.config_file
+    ), f"No config file found at {args.config_file}"
     cfg = load_json_to_dict(config_file)
 
     # Evaluate the model on the test set
     test_set_F1_score = evaluate_finetuned_model(cfg, dataset_dir, model_checkpoint)
     test_set_F1_score = test_set_F1_score * 100
 
-    print(f"F1 Score on the Test Set: {test_set_F1_score:.2f}")
+    print(f"F1 Score: {test_set_F1_score:.2f}")
