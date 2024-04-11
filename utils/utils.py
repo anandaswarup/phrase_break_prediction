@@ -2,6 +2,7 @@
 
 import json
 import os
+
 import torch
 
 
@@ -81,6 +82,6 @@ def load_checkpoint_to_evaluate_model(checkpoint_path, model, device):
     """
     checkpoint = torch.load(checkpoint_path, map_location=device)
 
-    model.load_state_dict(checkpoint["model"])
+    model.load_state_dict(checkpoint["model"], strict=False)
 
     return model
